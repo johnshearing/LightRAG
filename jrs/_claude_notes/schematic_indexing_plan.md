@@ -429,14 +429,24 @@ All paths verified to exist on 2026-07-23 unless noted.
 | `/home/js/LightRAG-Dev/jrs/_1_custom_index_01.py` | The `ainsert_custom_kg` path to adapt for indexing the schematic KG. |
 | `/home/js/LightRAG-Dev/jrs/_2_ra_query_text.py` | Existing text-query script; reuse for testing answers (hybrid mode). |
 | `/home/js/LightRAG-Dev/jrs/_2_ra_query_image.py` | Existing image-query script; reference. |
-| `/home/js/LightRAG-Dev/jrs/_0_interesting_queries.md` | Sample queries; use to define acceptance tests for troubleshooting answers. |
 | `/home/js/LightRAG-Dev/lightrag/lightrag.py` (line 2342) | Ground-truth `ainsert_custom_kg` schema (see §6). |
 | `/home/js/LightRAG-Dev/jrs/work/mod_linx/mod_linx_data/__enqueued__/Troubleshooting Mod-Linx Conveyors.pdf` | Prose manual to index (normal AI extraction) into the same working_dir; entity names must match the schematic KG. |
 | `/home/js/LightRAG-Dev/jrs/work/mod_linx/mod_linx_work_dir/` | Existing LightRAG working dir for mod_linx (JSON/GraphML storage). A `_Backup` copy also exists. |
 
 ---
 
-## 8. Open Items / Next Steps
+## 8. Typical Queries We Intend to Ask Regarding the Schematics Ingested
+
+1. What is wire 110 connected to?
+2. What color is wire 110?
+3. What does wire 110 do?
+4. How many start/stop switches are shown in the schematic?
+5. What will happen when CR-ON is energized?
+6. What conditions must be met in order to energize CR-ON?
+7. What conditions must be met in order to energize CR-SW?
+---
+
+## 9. Open Items / Next Steps
 
 1. **Draft the extraction skill** in `schematic_skills/` targeting the §5 schema
    (netlist tracer + tiled vision verification). *Not started — awaiting go-ahead. This is
@@ -463,7 +473,7 @@ All paths verified to exist on 2026-07-23 unless noted.
 
 ---
 
-## 9. Glossary
+## 10. Glossary
 - **Netlist** — the list of electrical connections: which component/terminal connects to
   which, and on what net.
 - **Net** — a set of terminals that are electrically common (same node). The drawing labels
