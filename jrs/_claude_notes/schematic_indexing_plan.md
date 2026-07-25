@@ -438,12 +438,46 @@ All paths verified to exist on 2026-07-23 unless noted.
 ## 8. Typical Queries We Intend to Ask Regarding the Schematics Ingested
 
 1. What is wire 110 connected to?
+   Answer: Terminal 14 of Relay CR-SW, Terminal 110, Wire 111 of the previous machine. Note (We are looking at the schematic of the Master Machine so there is not likely to be a previous machine), Terminal A2 of Relay CR-ON, Terminal 12 of Relay CR-BP.
 2. What color is wire 110?
+   Answer: Blue.
 3. What does wire 110 do?
-4. How many start/stop switches are shown in the schematic?
+   Answer: 1. It is used to energize Relay CR-ON. 
+           2. It is used to carry the Start/Stop Signal from the Master Machine to all Subordinate Machines.
+4. How many start/stop switches are shown on the schematic?
+   Answer: 2
 5. What will happen when CR-ON is energized?
-6. What conditions must be met in order to energize CR-ON?
+   Answer: The Run Wire will become energized. The Run Pin on the MDR Drive will receive 24 Volts. The Machine will run.
+6. What conditions must be met in order to energize Relay CR-ON?
+   Answer: Relay CR-SW or Relay CR-BP must be energized.
 7. What conditions must be met in order to energize CR-SW?
+   Answer: 
+8. What conditions must be met in order to energize CR-BP?
+   Answer:   
+9. What components have a wired connection with the Bypass Switch and what wires are used to make the connections?
+   Answer: 
+10. What will happen to Relay CR-BP if the Bypass Switch is set to the on possition?
+    Answer: Relay CR-BP will become energized if the Start/Stop Circuit is closed.
+11. What will happen if CR-BP becomes energized?
+    Answer: The machine will run.
+12. What does Relay CR-SW do? 
+    Answer: It controls Relay CR-ON
+13. What components have a wired connection with Relay CR-BP and what wires are used to make the connections? 
+    Answer: 
+14. What is the color and type of Wire 110?
+    Answer:
+15. What components do the Start/Stop Buttons control?
+    Answer: 
+16. What are the Start/Stop Buttons connected to and what wires are used to make the connections?
+    Answer:
+17. How are the Start/Stop Buttons labeled on the schematic?
+    Answer:
+18. Describe the Start/Stop Buttons
+    Answer:
+19. What happens when CR-1 and CR-2 are activated?
+    Answer: 
+
+
 ---
 
 ## 9. Open Items / Next Steps
