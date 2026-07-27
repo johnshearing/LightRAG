@@ -19,7 +19,7 @@
 1. Read §1–§6 for full context, decisions, and rationale.
 2. Read the files in §7 (especially the sample PDF, `construction_skills/`, the two prior
    `circuit_logic.json` attempts, and the verified `ainsert_custom_kg` schema).
-3. Pick up at §8 "Open Items / Next Steps."
+3. Pick up at §9 "Open Items / Next Steps."
 4. Honor the environment facts in §1 (LightRAG init requirement; **query in `hybrid`
    mode** per user preference).
 
@@ -57,10 +57,28 @@ components and connections are captured, and entity properties/relationships are
 ### 2.2 Sample artifact
 `work/mod_linx/mod_linx_data/PS20115MLM4-2.pdf` — a **true vector PDF, 1 page** (not a scan).
 It is the Mod-Linx Power Supply Assembly schematic: 24VDC 20A output, 115VAC 1-phase input,
-Master 4 drive cards, revision D, Convex Corp. Because it is vector-based, **every text
-label (component tags, terminal numbers, wire color + gauge) and every wire line is in the
-vector layer and can be extracted losslessly** with PyMuPDF — this fact drives the whole
-plan.
+Master 4 drive cards, revision D, Convex Corp.
+
+> **⚠️ Correction (verified 2026-07-26, supersedes the original claim here).** This plan
+> originally assumed that because the PDF is vector-based, *every* text label could be
+> extracted losslessly with PyMuPDF. **That is false for this file.** It was exported by
+> DraftSight via Teigha, and **all text is plotted as stroked line geometry** — the PDF
+> contains **no fonts and no text objects at all**. Measured: `page.get_text()` returns an
+> empty string; `get_fonts()` is empty; 17,923 line segments, of which ~99% are shorter than
+> 5pt because they are glyph strokes.
+>
+> What this changes, and what it does not:
+> - **Wire geometry is still fully deterministic and lossless.** 360 long segments on the
+>   `SCHEMATIC` layer are the conductors; tracing them needs no AI. This half of the plan
+>   stands.
+> - **Text is not deterministic.** Labels must be recovered by clustering the short strokes
+>   into glyph/line bounding boxes and OCRing the rendered crop, then corrected against a
+>   domain lexicon. The vision-verification pass is therefore **mandatory, not optional**.
+> - The sheet carries PDF layers (OCGs) `0`, `FORMAT`, `SCHEMATIC`, `REVNOTE` — useful for
+>   separating the drawing border and title block from the circuit.
+>
+> Do not assume a different schematic behaves the same way. Check
+> `has_embedded_text` in the extraction output before deciding how much to trust the labels.
 
 ### 2.3 Two prior indexing attempts (both incomplete — do not repeat as-is)
 - **`_1_ra_index.py`** — the *AI-does-the-indexing* path: **RAGAnything** (vision reads the
@@ -181,7 +199,7 @@ The **master, human-auditable** artifact the extraction skill must produce. It i
 | Field | Type | Notes |
 |---|---|---|
 | `id` | string | **canonical** designator (`CR-BP`) |
-| `class` | enum | relay / circuit_breaker / fuse / terminal_block / push_button / power_supply / speed_controller / connector_receptacle / ground / drive_card / motor / cable_plug |
+| `class` | enum | relay / circuit_breaker / fuse / terminal_block / push_button / power_supply / speed_controller / connector_receptacle / ground / drive_card / motor / cable_plug / switch|
 | `description` | string | human-readable |
 | `ratings` | object | `{voltage, current, poles, ...}` as available |
 | `function` | string | role in the circuit |
@@ -431,11 +449,35 @@ All paths verified to exist on 2026-07-23 unless noted.
 | `/home/js/LightRAG-Dev/jrs/_2_ra_query_image.py` | Existing image-query script; reference. |
 | `/home/js/LightRAG-Dev/lightrag/lightrag.py` (line 2342) | Ground-truth `ainsert_custom_kg` schema (see §6). |
 | `/home/js/LightRAG-Dev/jrs/work/mod_linx/mod_linx_data/__enqueued__/Troubleshooting Mod-Linx Conveyors.pdf` | Prose manual to index (normal AI extraction) into the same working_dir; entity names must match the schematic KG. |
-| `/home/js/LightRAG-Dev/jrs/work/mod_linx/mod_linx_work_dir/` | Existing LightRAG working dir for mod_linx (JSON/GraphML storage). A `_Backup` copy also exists. |
 
 ---
 
 ## 8. Typical Queries We Intend to Ask Regarding the Schematics Ingested
+
+This section collects the queries we will run against the index (in `hybrid` mode per user
+preference) to evaluate extraction quality. It doubles as an **acceptance-test suite**: §8.2 is
+organized so that every schema entity type (component, terminal, net, wire, cable, subsystem,
+drawing) and every relationship type (`CONNECTS_TO`, `ON_NET`, `POWERS`, `PROTECTS`,
+`ACTUATES`, `COIL_CONTROLS_CONTACT`, `PART_OF`, `REFERENCES`) is exercised by at least one
+question. §8.1 is John's original list; §8.2 is the additional categorized set. Some §8.2
+questions intentionally overlap §8.1 as cross-checks — that redundancy is deliberate, not an
+error.
+
+> **⚠️ Domain correction (learned from the repair manual — NOT deducible from the drawing
+> alone):** The **REVERSE 5A circuit breaker** and the **BYPASS 5A circuit breaker** are
+> actually used as **manual switches, not as over-current protection.** (The manufacturer's
+> reason is unknown; likely chosen because they DIN-rail mount easily.) This affects how they
+> must be modeled in `circuit_logic.json`:
+> - Keep `class: "circuit_breaker"` (that *is* the physical part on the drawing), **but**
+> - Their `function`/`description` prose must state they are **used as switches** (the REVERSE
+>   breaker selects/enables the DIR direction path; the BYPASS breaker enables the bypass
+>   control path to `CR-BP`).
+> - The relationships they participate in are **`ACTUATES`-style gating of a control path**,
+>   **not** `PROTECTS`. Only `CB1`, `CB2`, and `PS1`'s associated protection are true
+>   over-current devices.
+> - Read Questions 22, 41, 45 (and §8.2 protection questions 41–43) with this in mind.
+
+### 8.1 John's original questions (with expected answers)
 
 1. What is wire 110 connected to?
    Answer: Terminal 14 of Relay CR-SW, Terminal 110, Wire 111 of the previous machine. Note (We are looking at the schematic of the Master Machine so there is not likely to be a previous machine), Terminal A2 of Relay CR-ON, Terminal 12 of Relay CR-BP.
@@ -451,40 +493,176 @@ All paths verified to exist on 2026-07-23 unless noted.
 6. What conditions must be met in order to energize Relay CR-ON?
    Answer: Relay CR-SW or Relay CR-BP must be energized.
 7. What conditions must be met in order to energize CR-SW?
-   Answer: 
+   Answer: Without the schematic for the subordinate machine it will appear as if Relay CR-SW can not be energized.
 8. What conditions must be met in order to energize CR-BP?
-   Answer:   
+   Answer: Both Start/Stop buttons must be in the on state to energize Relays CR-1 and CR-2 and the Bypass Switch must be in the on position.
 9. What components have a wired connection with the Bypass Switch and what wires are used to make the connections?
-   Answer: 
+   Answer: I will look on the schematic to verify this answer. 
 10. What will happen to Relay CR-BP if the Bypass Switch is set to the on possition?
     Answer: Relay CR-BP will become energized if the Start/Stop Circuit is closed.
 11. What will happen if CR-BP becomes energized?
     Answer: The machine will run.
 12. What does Relay CR-SW do? 
-    Answer: It controls Relay CR-ON
+    Answer: Without the schematic for the subordinate machine, Relay CR-SW appears to do nothing.
 13. What components have a wired connection with Relay CR-BP and what wires are used to make the connections? 
-    Answer: 
+    Answer: I will look on the schematic to verify this answer.
 14. What is the color and type of Wire 110?
-    Answer:
+    Answer: I will look on the schematic to verify this answer.
 15. What components do the Start/Stop Buttons control?
-    Answer: 
+    Answer: Relays CR-1 and CR-2
 16. What are the Start/Stop Buttons connected to and what wires are used to make the connections?
-    Answer:
+    Answer: I will look on the schematic to verify this answer.
 17. How are the Start/Stop Buttons labeled on the schematic?
-    Answer:
+    Answer: PB1, Start/Stop Switch and PB2 Start/Stop Switch.
 18. Describe the Start/Stop Buttons
-    Answer:
+    Answer: These are lighted push button switches which toggle from red in open position to green when in the closed position.
+            Terminal 1 is takes 24 Volts, Terminal 2 is not connected, Terminal is connected to common,
+            Terminal 4 is the signal wire which carries 24 volts to Terminal A1 of Relays CR-1 and CR-2.
 19. What happens when CR-1 and CR-2 are activated?
-    Answer: 
+    Answer: CR-BP becomes energized if the Bypass Switch is in the on position.
+20. Describe the Start/Stop Circuit.
+    Answer: I will see what response the process provides and compare with my own understanding of that circuit.
 
+### 8.2 Additional categorized acceptance questions
+
+Grouped by the schema element each question exercises. Numbering continues from §8.1.
+
+**Drawing / title-block metadata** (`drawing`, `REFERENCES`)
+21. What is the drawing number and revision of this schematic?
+22. What assembly does this drawing document, and who owns it?
+23. What are the input power specifications (voltage, phase, frequency, FLA, SCCR)?
+24. What other drawings does this schematic reference for external device connections?
+    (MXCS-M9, MXCS-M11, MXCS-P9, MXCS-P11)
+25. What are the wiring notes on this drawing? (4" DC/AC clearance; individual wires — do not
+    double-place; label all wires/cables 1" from end)
+
+**Component inventory & identification** (`components`)
+26. List every component shown on the schematic.
+27. How many relays are on this schematic, and what are their designators?
+    (CR-ON, CR-BP, CR-SW, CR1, CR2)
+28. How many circuit breakers are shown, and what are their ratings and purposes? (CB1 8A, CB2
+    20A, REVERSE 5A, BYPASS 5A — see the §8 domain correction: the two 5A breakers are switches)
+29. How many start/stop switches are shown, and how are they labeled? (PB1, PB2)
+30. What does the `24E-1` designator refer to on this drawing?
+31. What is `CR-ON` and what is its stated function? ("Mod-Linx RUN — Run signal to cards")
+32. Describe the speed controller and its terminals.
+33. What connectors/receptacles are on this drawing and how many pins does each have?
+
+**Ratings & specifications** (`components.ratings`)
+34. What is the rating of `CB1`? Of `CB2`? Of the reverse and bypass breakers?
+35. What are the input and output ratings of power supply `PS1`? (115VAC in, 24VDC 20A out)
+36. What is the coil voltage of the control relays?
+
+**Power distribution & power domains** (`POWERS`, `power_domain`, nets)
+37. What supplies 24VDC in this circuit, and which components run on the 24VDC bus?
+38. Trace the 115VAC path from the input plug to the power supply.
+39. Which components operate on 115VAC versus 24VDC?
+40. What is connected to the `0V` (common) net?
+
+**Protection / mode switching** (`PROTECTS`, and the switch-breakers per §8 correction)
+41. What does `CB1` protect?
+42. Which device gates the reverse (DIR) direction path, and which gates the bypass control
+    path? (The REVERSE 5A and BYPASS 5A breakers — used as switches, not protection.)
+43. If `CB2` trips, what loses power?
+
+**Connectivity / netlist — wire tracing** (`CONNECTS_TO`, `ON_NET`)
+44. What is wire/net `110` connected to? (endpoints and all intermediate terminals)
+45. What components have a wired connection to relay `CR-BP`, and which wires make each
+    connection?
+46. What are the start/stop buttons connected to, and by which wires?
+47. What is on net `125`? On net `120`? On net `130`?
+48. Trace the connections of the `5-pin micro female receptacle` — where does each pin go?
+49. What connects `INFEED INTERFACE #1` to `DISCHARGE INTERFACE #1`? (net-by-net)
+50. What is terminal `A1` of `CR1` connected to?
+
+**Wire attributes** (`wires`: color, gauge, cable)
+51. What color and gauge is wire `110`?
+52. What gauge are the wires on the 115VAC input feed?
+53. Which wires belong to cable `24E-1`?
+54. What color/gauge carries the SPD (speed) signal to the receptacle?
+
+**Cables** (`cables`)
+55. What cables are shown, and which wires does each bundle?
+56. What are the four conductors in a start/stop cable, and what is each used for?
+
+**Control logic / relay behavior** (`ACTUATES`, `COIL_CONTROLS_CONTACT`)
+57. What will happen when `CR-ON` is energized?
+58. What conditions must be met to energize `CR-ON`?
+59. What actuates the coil of `CR1`? Of `CR2`?
+60. When `CR1` and `CR2` are both energized, what happens next?
+61. What does the bypass breaker (switch) do to relay `CR-BP` when closed?
+62. What is the difference in function between `CR-ON`, `CR-BP`, and `CR-SW`?
+63. Describe the start/stop control circuit from button press to RUN signal.
+
+**Subsystems / functional grouping** (`subsystems`, `PART_OF`)
+64. What functional sections make up this power supply assembly?
+65. Which components belong to the bypass circuit?
+66. Which components form the operator start/stop control?
+
+**Off-page / boundary probes** (tests §9 open items — do NOT expect full answers)
+67. What conditions are needed to energize `CR-SW`? *(Expected: cannot be fully determined
+    without the subordinate-machine drawing — good test that the index says so rather than
+    hallucinating.)*
+68. Where does the `RUN` signal go after leaving this drawing? *(Should surface the external
+    MXCS references / receptacle, not invent a destination.)*
+69. What external devices connect through the 5-pin receptacle?
+
+**Notes / installation-instruction retrieval**
+70. What special handling does the `CIRCUIT 1 LIGHT` cable require? (remove white & brown wire
+    at insulation, heat-shrink exposed end)
+71. What is the minimum clearance required between DC and 115VAC wiring? (4")
+
+### 8.3 What these questions tell us
+
+- **Q44–Q54 are the real proving ground.** They only answer well if the netlist tracer
+  correctly resolves `ON_NET` — a fault/signal on net 110 touches *every* terminal on that net,
+  not just one wire's two ends. John's Q1 (wire 110 → CR-SW:14, CR-ON:A2, CR-BP:12, plus the
+  previous machine) is exactly a multi-terminal net and is the single best test of net-building.
+- **Q57–Q63 exercise `COIL_CONTROLS_CONTACT`**, which does not exist in the raw netlist and must
+  be synthesized during extraction. If these fail while Q44–Q54 pass, the netlist is fine but
+  the control-logic layer wasn't populated.
+- **Q67–Q68 deliberately probe the off-page / bus-net fragmentation risk** (§9 items 2–3).
+  "Correct" here means a bounded, honest answer, not a confident wrong one.
+- Since the preliminary experiment indexes **only the schematic** (no manual), answer quality
+  depends entirely on the prose `description` chunks attached per entity/relationship — terse
+  designators alone give weak vector matches. These questions help tune how much prose each
+  chunk needs.
 
 ---
 
 ## 9. Open Items / Next Steps
 
-1. **Draft the extraction skill** in `schematic_skills/` targeting the §5 schema
-   (netlist tracer + tiled vision verification). *Not started — awaiting go-ahead. This is
-   the intended next action.*
+1. ~~**Draft the extraction skill** in `schematic_skills/` targeting the §5 schema
+   (netlist tracer + tiled vision verification).~~ **DONE 2026-07-26.** Delivered:
+   `schematic_skills/SKILL.md`, `scripts/extract.py` (geometry + stroke-glyph OCR +
+   conductor tracing + net assembly + review queue), `scripts/render_tiles.py` (annotated
+   tiles, region zoom, label contact sheets), `scripts/build_kg.py` (§5 → §6 transform with
+   validation), `scripts/index_schematic.py` (`ainsert_custom_kg` loader),
+   `references/schematic_conventions.md`, `references/circuit_logic_schema.md`.
+   Baseline on `PS20115MLM4-2.pdf`: 502 text labels found / 431 read (159 low-confidence),
+   360 conductor segments → 149 conductors, 88 terminal points, 10 device circles, 111 nets.
+
+1b. ~~**Run the skill end-to-end on `PS20115MLM4-2.pdf`.**~~ **DONE 2026-07-26.** All 16
+   tiles read visually plus targeted zooms. Output in
+   `work/mod_linx/schematic_extraction/`: `geometry.json`, `tiles/`,
+   `author_circuit_logic.py` (provenance), **`circuit_logic.json`** (47 components, 131
+   terminals, 26 nets, 71 wires, 8 cables, 7 subsystems, 402 relationships — including 127
+   `ON_NET` and 6 `COIL_CONTROLS_CONTACT`), `custom_kg.json` (693 chunks / 291 entities /
+   402 relationships, passes `build_kg.py --validate`), and `EXTRACTION_NOTES.md`.
+   Cross-check: extracted net `110` reproduces John's §8.1 Q1 expected answer exactly
+   (`CR-SW:14`, `TB-110`, `INFEED1:1` = "111 of the previous machine", `CR-ON:A2`,
+   `CR-BP:12`). **Nothing has been indexed yet** — that is §9 item 5/8a.
+
+   Corrections this run produced (details in `EXTRACTION_NOTES.md`):
+   - **"Revision D" is wrong — `D` is the SHEET SIZE.** The title block has no revision
+     field; the only revision datum is a stamp dated **04/08/2020**.
+   - The company is **CONVEYX CORP**, not "Convex Corp" (as written in §5.3 of this plan).
+   - Drawing date is **9/19/2017**, not 2007-05-29.
+   - The small circles on wire runs are **crossover hops, not junctions** — `extract.py`
+     reports all 88 as `terminal_point`, and only the ones inside terminal-block rectangles
+     are real. This is the accuracy risk in §9 "junction vs crossover", and it is real here.
+   - Every long run is **labelled twice, sometimes with different colours** (panel wire
+     colour at one end, cordset conductor colour at the receptacle end).
 2. Decide **junction-vs-crossover** handling (real junction vs. wires that cross but don't
    connect) — the main accuracy risk.
 3. Handle **off-page / bus nets** (`MXCS-P9`/`MXCS-P11` external connections; ground/power
@@ -496,7 +674,18 @@ All paths verified to exist on 2026-07-23 unless noted.
 6. **Ingest the troubleshooting manual** into the same working_dir with matching entity
    names; verify graph linkage.
 7. Define **acceptance tests**: a set of troubleshooting questions (seed from
-   `_0_interesting_queries.md`) with expected-answer criteria; query in `hybrid` mode.
+   `_0_interesting_queries.md`) with expected-answer criteria; query in `hybrid` mode. The
+   combined question list in **§8** (§8.1 John's + §8.2 categorized) is the seed set.
+8. **Experiment — ingestion order.** Two experiments to compare:
+   - **(a) Schematic-only** (the preliminary run): index just the custom-KG schematic and ask
+     the §8 questions. Establishes the baseline of what the schematic alone can answer.
+   - **(b) Manual-first, then schematic:** index the troubleshooting manual **first** (normal AI
+     extraction), *then* index the schematic custom-KG into the same working_dir. Hypothesis:
+     seeding the graph with the manual's plain-language entities/relationships first may give the
+     schematic's designators richer context to attach to (e.g. the manual already knows the
+     REVERSE/BYPASS breakers are *used as switches* — see the §8 domain correction — so the
+     schematic nodes link into that meaning), yielding **more accurate schematic indexing**.
+     Compare (a) vs (b) on the same §8 questions to see whether order matters.
 
 ### Accuracy risks to keep in mind
 - **Junctions vs. crossovers** — wrong here = wrong netlist = confidently wrong answers.

@@ -103,11 +103,18 @@ CLAUDE.md
 # 7. Allow the archive folder specifically
 !/jrs/archive/
 
-# 8. Allow everything inside the _notes folder
+# 8. Allow everything inside the archive folder
 !/jrs/archive/**
 
-# 9. Allow the archive folder specifically
+# 9. Allow the _claude_notes folder specifically
 !/jrs/_claude_notes/
 
-# 10. Allow everything inside the _notes folder
+# 10. Allow everything inside the _claude_notes folder
 !/jrs/_claude_notes/**
+
+# 11. Allow the schematic_skills folder specifically
+!/jrs/schematic_skills/
+
+# 12. Allow everything inside the schematic_skills folder
+!/jrs/schematic_skills/**
+
