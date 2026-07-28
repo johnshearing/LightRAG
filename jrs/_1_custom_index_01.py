@@ -13,7 +13,7 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 # import textract
 
 # Configuration
-WORKING_DIR = "/home/js/LightRAG/jrs/work/seheult/_seheult_work_dir"
+WORKING_DIR = "/home/js/LightRAG-Dev/jrs/work/mod_linx/mod_linx_schematic_work_dir"
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-large")
 EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", 3072))
 API_KEY = os.getenv("EMBEDDING_BINDING_API_KEY")
@@ -21,8 +21,7 @@ MAX_TOKEN_SIZE = int(os.getenv("MAX_TOKEN_SIZE", 8192))
 
 # Files to be indexed
 files_2b_indexed = [
-    "/home/js/LightRAG/jrs/work/seheult/seheult_metadata/_bNySyEobfY_metadata.json",
-    "/home/js/LightRAG/jrs/work/seheult/seheult_metadata/0m1Qekrfs7w_metadata.json",
+    "/home/js/LightRAG-Dev/jrs/work/mod_linx/schematic_extraction/PS20115MLM4-2/custom_kg.json"
 ]
 
 

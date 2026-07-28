@@ -39,8 +39,8 @@ example throughout.
 | 2 | `tiles/` | `scripts/render_tiles.py` | you or Claude | **No** — regenerate |
 | 3 | `crops/` (optional) | `scripts/render_tiles.py crops` | you or Claude | **No** — regenerate |
 | 4 | `author_circuit_logic.py` | Claude, by hand | **Claude only** | **Yes — this is the one you maintain** |
-| 5 | `circuit_logic.json` | running #4 | either | **No** — regenerate from #4 |
-| 6 | `custom_kg.json` | `scripts/build_kg.py` | you or Claude | **No** — regenerate |
+| 5 | `circuit_logic.json` | running #4 `author_circuit_logic.py` | either | **No** — regenerate from `author_circuit_logic.py` |
+| 6 | `custom_kg.json` | `schematic_skills/scripts/build_kg.py circuit_logic.json -o custom_kg.json` | you or Claude | **No** — regenerate |
 | 7 | `EXTRACTION_NOTES.md` | Claude, by hand | Claude | Yes, it's documentation |
 | 8 | (LightRAG index) | `scripts/index_schematic.py` | you or Claude | n/a |
 
@@ -277,6 +277,16 @@ where the output goes. Claude then drives the scripts itself.
 (If you install the skill per §4, drop the first sentence — Claude will find it by
 description.)
 
+### Activate the virtual environment first
+
+`ModuleNotFoundError: No module named 'lightrag'` means you're on the system Python. Only
+`index_schematic.py` imports lightrag — `extract.py`, `render_tiles.py` and `build_kg.py`
+don't — so steps 1–6 work outside the venv and step 7 suddenly doesn't. Activate it anyway:
+
+```bash
+source /home/js/LightRAG-Dev/.venv/bin/activate
+```
+
 The listing below is what Claude will do on your behalf:
 
 ```bash
@@ -408,6 +418,41 @@ the netlist survived."*
 - `--dry-run` validates without writing. Always run it first.
 - `--doc-id` defaults to the KG filename. Give distinct drawings distinct doc-ids if you're
   putting several into one working directory.
+
+### `index_schematic.py` vs `jrs/_1_custom_index_01.py`
+
+Either works. Both load the JSON and call `rag.ainsert_custom_kg(kg, full_doc_id=...)`;
+neither has a special claim on the format. Their embedding paths differ in code
+(`_1_custom_index_01.py` uses llama-index's `OpenAIEmbedding`, the skill script uses
+lightrag's `openai_embed`) but resolve to the same `text-embedding-3-large` / 3072, so the
+vectors are compatible and you can point both at the same working directory.
+
+| | `index_schematic.py` | `_1_custom_index_01.py` |
+|---|---|---|
+| Configuration | CLI args — no file edit per drawing | `WORKING_DIR` and `files_2b_indexed` hardcoded |
+| `--dry-run` | yes | no |
+| Pre-flight validation | required keys, and **every relationship has `keywords`** | none |
+| Logging | stdout | rotating file → `lightrag_index.log` |
+| Skip already-indexed | no | yes, via `kv_store_doc_status.json` |
+
+The pre-flight `keywords` check is the one that earns its keep: `ainsert_custom_kg` reads
+that key without a default and raises if it's absent, so without the check you find out
+partway through a paid indexing run.
+
+Treating them as complementary works well — free preflight, then index with whichever you
+prefer:
+
+```bash
+source /home/js/LightRAG-Dev/.venv/bin/activate
+python schematic_skills/scripts/index_schematic.py <OUT>/custom_kg.json -w <work_dir> --dry-run
+python _1_custom_index_01.py     # or drop --dry-run from the line above
+```
+
+Note `-w` is a required flag, not positional. And one caveat on `_1_custom_index_01.py`'s
+skip logic: it matches `doc["file_path"]` against the full path in `files_2b_indexed`, but
+`ainsert_custom_kg` populates `file_path` from the entries inside the KG (which say
+`circuit_logic.json`). Unverified — but if it re-indexes something you expected it to skip,
+that's where to look.
 
 ### One working_dir per machine — decide before you index a second drawing
 

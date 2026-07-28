@@ -2,9 +2,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import pLimit from 'p-limit';
+import { backendBaseUrl } from '@/lib/constants';
 
-// const API_BASE = 'http://localhost:9621';
-const API_BASE = `${window.location.protocol}//${window.location.hostname}:9621`;
+// Same-origin (relative) requests, matching the rest of the WebUI. This keeps
+// each server instance talking to itself when several run on different ports.
+const API_BASE = backendBaseUrl;
 
 export default function SanitizeData() {
   const [entities, setEntities] = useState<string[]>([]);
