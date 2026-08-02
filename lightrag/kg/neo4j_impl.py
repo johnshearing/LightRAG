@@ -1735,9 +1735,7 @@ class Neo4JStorage(BaseGraphStorage):
                 )
                 return labels
             except Exception as e:
-                logger.error(
-                    f"[{self.workspace}] Error getting popular labels: {e!s}"
-                )
+                logger.error(f"[{self.workspace}] Error getting popular labels: {e!s}")
                 if result is not None:
                     await result.consume()
                 raise

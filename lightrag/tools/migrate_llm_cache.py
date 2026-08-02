@@ -1092,7 +1092,11 @@ class MigrationTool:
                     else "config.ini or default"
                 )
                 print(f"- Configuration Source: {config_source}")
-            elif storage_name == "PGKVStorage" or storage_name == "MongoKVStorage" or storage_name == "OpenSearchKVStorage":
+            elif (
+                storage_name == "PGKVStorage"
+                or storage_name == "MongoKVStorage"
+                or storage_name == "OpenSearchKVStorage"
+            ):
                 config_source = (
                     "environment variables"
                     if all(

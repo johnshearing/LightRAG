@@ -1297,9 +1297,7 @@ async def pipeline_enqueue_file(
                 }
             ]
             await rag.apipeline_enqueue_error_documents(error_files, track_id)
-            logger.error(
-                f"[File Extraction]Error reading file {file_path.name}: {e!s}"
-            )
+            logger.error(f"[File Extraction]Error reading file {file_path.name}: {e!s}")
             return False, track_id
 
         # Process based on file type

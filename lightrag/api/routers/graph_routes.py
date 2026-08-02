@@ -410,9 +410,7 @@ def create_graph_routes(rag, api_key: str | None = None):
         except Exception as e:
             logger.error(f"Error updating entity '{request.entity_name}': {e!s}")
             logger.error(traceback.format_exc())
-            raise HTTPException(
-                status_code=500, detail=f"Error updating entity: {e!s}"
-            )
+            raise HTTPException(status_code=500, detail=f"Error updating entity: {e!s}")
 
     @router.post("/graph/relation/edit", dependencies=[Depends(combined_auth)])
     async def update_relation(request: RelationUpdateRequest):
@@ -518,9 +516,7 @@ def create_graph_routes(rag, api_key: str | None = None):
         except Exception as e:
             logger.error(f"Error creating entity '{request.entity_name}': {e!s}")
             logger.error(traceback.format_exc())
-            raise HTTPException(
-                status_code=500, detail=f"Error creating entity: {e!s}"
-            )
+            raise HTTPException(status_code=500, detail=f"Error creating entity: {e!s}")
 
     @router.post("/graph/relation/create", dependencies=[Depends(combined_auth)])
     async def create_relation(request: RelationCreateRequest):

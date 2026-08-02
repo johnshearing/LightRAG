@@ -555,7 +555,6 @@ class QueueFullError(Exception):
     """Raised when the queue is full and the wait times out"""
 
 
-
 class WorkerTimeoutError(Exception):
     """Worker-level timeout exception with specific timeout information"""
 
@@ -723,9 +722,7 @@ def priority_limit_async_func_call(
 
                     except Exception as e:
                         # Critical error in worker loop
-                        logger.error(
-                            f"{queue_name}: Critical error in worker: {e!s}"
-                        )
+                        logger.error(f"{queue_name}: Critical error in worker: {e!s}")
                         await asyncio.sleep(0.1)
             finally:
                 logger.debug(f"{queue_name}: Worker exiting")
@@ -1653,7 +1650,10 @@ async def aexport_data(
                 )
 
                 # Write rows
-                mdfile.writelines("| " + " | ".join(str(v) for v in entity.values()) + " |\n" for entity in entities_data)
+                mdfile.writelines(
+                    "| " + " | ".join(str(v) for v in entity.values()) + " |\n"
+                    for entity in entities_data
+                )
                 mdfile.write("\n\n")
             else:
                 mdfile.write("*No entity data available*\n\n")
@@ -1668,7 +1668,10 @@ async def aexport_data(
                 )
 
                 # Write rows
-                mdfile.writelines("| " + " | ".join(str(v) for v in relation.values()) + " |\n" for relation in relations_data)
+                mdfile.writelines(
+                    "| " + " | ".join(str(v) for v in relation.values()) + " |\n"
+                    for relation in relations_data
+                )
                 mdfile.write("\n\n")
             else:
                 mdfile.write("*No relation data available*\n\n")
@@ -1685,9 +1688,10 @@ async def aexport_data(
                 )
 
                 # Write rows
-                mdfile.writelines("| "
-                        + " | ".join(str(v) for v in relationship.values())
-                        + " |\n" for relationship in relationships_data)
+                mdfile.writelines(
+                    "| " + " | ".join(str(v) for v in relationship.values()) + " |\n"
+                    for relationship in relationships_data
+                )
             else:
                 mdfile.write("*No relationship data available*\n\n")
 

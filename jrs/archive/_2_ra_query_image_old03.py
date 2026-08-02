@@ -103,7 +103,9 @@ async def run_image_query(
             f.write("### Session Parameters\n")
             f.write("| Parameter | Value |\n")
             f.write("| :--- | :--- |\n")
-            f.writelines(f"| {param} | {value} |\n" for param, value in query_params.items())
+            f.writelines(
+                f"| {param} | {value} |\n" for param, value in query_params.items()
+            )
             f.write(f"| modes_tested | {', '.join(modes)} |\n\n")
 
         # --- MULTI-MODE QUERY LOOP ---

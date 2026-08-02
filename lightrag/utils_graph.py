@@ -305,7 +305,9 @@ async def _edit_entity_impl(
     new_node_data = {**node_data, **updated_data}
     new_node_data["entity_id"] = new_entity_name
 
-    new_node_data.pop("entity_name", None)  # Node data should not contain entity_name field
+    new_node_data.pop(
+        "entity_name", None
+    )  # Node data should not contain entity_name field
 
     if is_renaming:
         logger.info(f"Entity Edit: renaming `{entity_name}` to `{new_entity_name}`")

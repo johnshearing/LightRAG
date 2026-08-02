@@ -47,7 +47,6 @@ class InvalidResponseError(Exception):
     """Custom exception class for triggering retry mechanism"""
 
 
-
 # Core Anthropic completion function with retry
 @retry(
     stop=stop_after_attempt(3),

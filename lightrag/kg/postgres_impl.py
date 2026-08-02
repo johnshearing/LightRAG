@@ -1248,12 +1248,17 @@ class PostgreSQLDB:
                     # Check if migration is needed
                     needs_migration = False
 
-                    if migration["column"] == "entity_name" and current_length == 255 or (
-                        migration["column"] in ["source_id", "target_id"]
-                        and current_length == 256
-                    ) or (
-                        migration["column"] == "file_path"
-                        and current_type == "character varying"
+                    if (
+                        migration["column"] == "entity_name"
+                        and current_length == 255
+                        or (
+                            migration["column"] in ["source_id", "target_id"]
+                            and current_length == 256
+                        )
+                        or (
+                            migration["column"] == "file_path"
+                            and current_type == "character varying"
+                        )
                     ):
                         needs_migration = True
 
@@ -4229,9 +4234,7 @@ class PGGraphStorage(BaseGraphStorage):
         return d
 
     @staticmethod
-    def _format_properties(
-        properties: dict[str, Any], _id: str | None = None
-    ) -> str:
+    def _format_properties(properties: dict[str, Any], _id: str | None = None) -> str:
         """
         Convert a dictionary of properties to a string representation that
         can be used in a cypher query insert/merge statement.

@@ -72,7 +72,6 @@ class InvalidResponseError(Exception):
     """Custom exception class for triggering retry mechanism"""
 
 
-
 # Module-level cache for tiktoken encodings
 _TIKTOKEN_ENCODING_CACHE: dict[str, Any] = {}
 
