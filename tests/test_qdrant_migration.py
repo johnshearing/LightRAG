@@ -1,9 +1,11 @@
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import numpy as np
+import pytest
 from qdrant_client import models
-from lightrag.utils import EmbeddingFunc
+
 from lightrag.kg.qdrant_impl import QdrantVectorDBStorage
+from lightrag.utils import EmbeddingFunc
 
 
 # Mock QdrantClient
@@ -116,7 +118,6 @@ async def test_qdrant_migration_trigger(mock_qdrant_client, mock_embedding_func)
 
     def upsert_mock(*args, **kwargs):
         migration_state["new_workspace_count"] = 100
-        return None
 
     mock_qdrant_client.upsert.side_effect = upsert_mock
 
@@ -330,7 +331,6 @@ async def test_scenario_2_legacy_upgrade_migration(
 
     def upsert_mock(*args, **kwargs):
         migration_state["new_workspace_count"] = 150
-        return None
 
     mock_qdrant_client.upsert.side_effect = upsert_mock
 
@@ -492,9 +492,9 @@ async def test_case1_empty_legacy_auto_cleanup(mock_qdrant_client, mock_embeddin
         if delete_calls[0][0]
         else delete_calls[0].kwargs.get("collection_name")
     )
-    assert (
-        deleted_collection == legacy_collection
-    ), f"Expected to delete '{legacy_collection}', but deleted '{deleted_collection}'"
+    assert deleted_collection == legacy_collection, (
+        f"Expected to delete '{legacy_collection}', but deleted '{deleted_collection}'"
+    )
 
     print(
         f"✅ Case 1a: Empty legacy collection '{legacy_collection}' auto-deleted successfully"

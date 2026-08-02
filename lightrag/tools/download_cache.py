@@ -9,7 +9,6 @@ import os
 import sys
 from pathlib import Path
 
-
 # Known tiktoken encoding names (not model names)
 # These need to be loaded with tiktoken.get_encoding() instead of tiktoken.encoding_for_model()
 TIKTOKEN_ENCODING_NAMES = {"cl100k_base", "p50k_base", "r50k_base", "o200k_base"}
@@ -107,11 +106,11 @@ def download_tiktoken_cache(cache_dir: str = None, models: list = None):
     print("  1. Copy directory to offline server:")
     print(f"     tar -czf tiktoken_cache.tar.gz {cache_dir}")
     print("     scp tiktoken_cache.tar.gz user@offline-server:/path/to/")
-    print("")
+    print()
     print("  2. On offline server, extract and set environment variable:")
     print("     tar -xzf tiktoken_cache.tar.gz")
     print("     export TIKTOKEN_CACHE_DIR=/path/to/tiktoken_cache")
-    print("")
+    print()
     print("  3. Or copy to default location:")
     print(f"     cp -r {cache_dir} ~/.tiktoken_cache/")
 

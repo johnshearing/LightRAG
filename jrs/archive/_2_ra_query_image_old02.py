@@ -3,12 +3,13 @@
 # For usage instructions enter the following command:
 # python3 ~/LightRAG/jrs/_2_ra_query_image.py --help
 
-import os
 import argparse
 import asyncio
+import os
 from datetime import datetime
 
 from raganything import RAGAnything, RAGAnythingConfig
+
 from lightrag.llm.openai import openai_complete_if_cache, openai_embed
 from lightrag.utils import EmbeddingFunc
 
@@ -102,8 +103,7 @@ async def run_image_query(
             f.write("### Session Parameters\n")
             f.write("| Parameter | Value |\n")
             f.write("| :--- | :--- |\n")
-            for param, value in query_params.items():
-                f.write(f"| {param} | {value} |\n")
+            f.writelines(f"| {param} | {value} |\n" for param, value in query_params.items())
             f.write(f"| modes_tested | {', '.join(modes)} |\n\n")
 
         # --- MULTI-MODE QUERY LOOP ---

@@ -1,11 +1,11 @@
 import pytest
 
+from lightrag import utils_graph
 from lightrag.constants import SOURCE_IDS_LIMIT_METHOD_KEEP
 from lightrag.operate import (
-    _merge_nodes_then_upsert,
     _handle_single_relationship_extraction,
+    _merge_nodes_then_upsert,
 )
-from lightrag import utils_graph
 
 
 class DummyGraphStorage:

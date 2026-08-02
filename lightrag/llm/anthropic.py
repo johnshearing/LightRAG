@@ -1,13 +1,16 @@
-from ..utils import verbose_debug, VERBOSE_DEBUG
-import sys
-import os
 import logging
+import os
+import sys
+from collections.abc import AsyncIterator
+from typing import Any
+
 import numpy as np
-from typing import Any, Union, AsyncIterator
 import pipmaster as pm  # Pipmaster for dynamic library install
 
+from ..utils import VERBOSE_DEBUG, verbose_debug
+
 if sys.version_info < (3, 9):
-    from typing import AsyncIterator
+    from collections.abc import AsyncIterator
 else:
     from collections.abc import AsyncIterator
 
@@ -19,31 +22,30 @@ if not pm.is_installed("anthropic"):
 if not pm.is_installed("voyageai"):
     pm.install("voyageai")
 import voyageai
-
 from anthropic import (
-    AsyncAnthropic,
     APIConnectionError,
-    RateLimitError,
     APITimeoutError,
+    AsyncAnthropic,
+    RateLimitError,
 )
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
-from lightrag.utils import (
-    safe_unicode_decode,
-    logger,
-)
+
 from lightrag.api import __api_version__
+from lightrag.utils import (
+    logger,
+    safe_unicode_decode,
+)
 
 
 # Custom exception for retry mechanism
 class InvalidResponseError(Exception):
     """Custom exception class for triggering retry mechanism"""
 
-    pass
 
 
 # Core Anthropic completion function with retry
@@ -63,7 +65,7 @@ async def anthropic_complete_if_cache(
     base_url: str | None = None,
     api_key: str | None = None,
     **kwargs: Any,
-) -> Union[str, AsyncIterator[str]]:
+) -> str | AsyncIterator[str]:
     if history_messages is None:
         history_messages = []
     if enable_cot:
@@ -146,7 +148,7 @@ async def anthropic_complete_if_cache(
                     content = safe_unicode_decode(content.encode("utf-8"))
                 yield content
         except Exception as e:
-            logger.error(f"Error in stream response: {str(e)}")
+            logger.error(f"Error in stream response: {e!s}")
             raise
 
     return stream_response()
@@ -159,7 +161,7 @@ async def anthropic_complete(
     history_messages: list[dict[str, Any]] | None = None,
     enable_cot: bool = False,
     **kwargs: Any,
-) -> Union[str, AsyncIterator[str]]:
+) -> str | AsyncIterator[str]:
     if history_messages is None:
         history_messages = []
     model_name = kwargs["hashing_kv"].global_config["llm_model_name"]
@@ -180,7 +182,7 @@ async def claude_3_opus_complete(
     history_messages: list[dict[str, Any]] | None = None,
     enable_cot: bool = False,
     **kwargs: Any,
-) -> Union[str, AsyncIterator[str]]:
+) -> str | AsyncIterator[str]:
     if history_messages is None:
         history_messages = []
     return await anthropic_complete_if_cache(
@@ -200,7 +202,7 @@ async def claude_3_sonnet_complete(
     history_messages: list[dict[str, Any]] | None = None,
     enable_cot: bool = False,
     **kwargs: Any,
-) -> Union[str, AsyncIterator[str]]:
+) -> str | AsyncIterator[str]:
     if history_messages is None:
         history_messages = []
     return await anthropic_complete_if_cache(
@@ -220,7 +222,7 @@ async def claude_3_haiku_complete(
     history_messages: list[dict[str, Any]] | None = None,
     enable_cot: bool = False,
     **kwargs: Any,
-) -> Union[str, AsyncIterator[str]]:
+) -> str | AsyncIterator[str]:
     if history_messages is None:
         history_messages = []
     return await anthropic_complete_if_cache(
@@ -287,7 +289,7 @@ async def anthropic_embed(
         return embeddings
 
     except Exception as e:
-        logger.error(f"Voyage AI embedding failed: {str(e)}")
+        logger.error(f"Voyage AI embedding failed: {e!s}")
         raise
 
 

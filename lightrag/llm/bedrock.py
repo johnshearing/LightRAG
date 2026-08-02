@@ -1,36 +1,38 @@
 import copy
-import os
 import json
 import logging
+import os
 
 import pipmaster as pm  # Pipmaster for dynamic library install
 
 if not pm.is_installed("aioboto3"):
     pm.install("aioboto3")
+import sys
+
 import aioboto3
 import numpy as np
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
 
-import sys
 from lightrag.utils import wrap_embedding_func_with_attrs
 
 if sys.version_info < (3, 9):
-    from typing import AsyncIterator
+    from collections.abc import AsyncIterator
 else:
     from collections.abc import AsyncIterator
-from typing import Union
 
 # Import botocore exceptions for proper exception handling
 try:
     from botocore.exceptions import (
         ClientError,
-        ConnectionError as BotocoreConnectionError,
         ReadTimeoutError,
+    )
+    from botocore.exceptions import (
+        ConnectionError as BotocoreConnectionError,
     )
 except ImportError:
     # If botocore is not installed, define placeholders
@@ -151,7 +153,7 @@ async def bedrock_complete_if_cache(
     aws_secret_access_key=None,
     aws_session_token=None,
     **kwargs,
-) -> Union[str, AsyncIterator[str]]:
+) -> str | AsyncIterator[str]:
     if enable_cot:
         import logging
 
@@ -338,7 +340,7 @@ async def bedrock_complete_if_cache(
 # Generic Bedrock completion function
 async def bedrock_complete(
     prompt, system_prompt=None, history_messages=[], keyword_extraction=False, **kwargs
-) -> Union[str, AsyncIterator[str]]:
+) -> str | AsyncIterator[str]:
     kwargs.pop("keyword_extraction", None)
     model_name = kwargs["hashing_kv"].global_config["llm_model_name"]
     result = await bedrock_complete_if_cache(

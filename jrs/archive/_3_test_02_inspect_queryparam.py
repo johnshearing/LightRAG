@@ -1,6 +1,7 @@
+import inspect
+
 import lightrag
 from lightrag import QueryParam
-import inspect
 
 print("_____________")
 

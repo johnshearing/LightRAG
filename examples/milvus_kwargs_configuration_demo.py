@@ -9,8 +9,9 @@ This approach allows configuration to be passed through framework layers without
 requiring environment variable changes or direct code modifications.
 """
 
-import os
 import asyncio
+import os
+
 from lightrag import LightRAG, QueryParam
 from lightrag.llm.openai import openai_complete_if_cache, openai_embed
 

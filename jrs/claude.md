@@ -13,4 +13,3 @@ But more complex questions involving troubleshooting where answered incorrectly.
 So now I am wondering if you would be able to answer both the simple questions and the more complex troublshooting questions better than gpt-4o using the LightRAG WebUI.
 
 Please answer my questions and tell me which of the files found in /home/js/LightRAG-Dev/jrs/work/mod_linx/schematic_extraction/PS20115MLM4-2 you are using to source the answers.
-

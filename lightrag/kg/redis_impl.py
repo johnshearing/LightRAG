@@ -1,37 +1,40 @@
-import os
-import logging
-from typing import Any, final, Union
-from dataclasses import dataclass
-import pipmaster as pm
 import configparser
-from contextlib import asynccontextmanager
+import logging
+import os
 import threading
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+from typing import Any, final
+
+import pipmaster as pm
 
 if not pm.is_installed("redis"):
     pm.install("redis")
 
 # aioredis is a depricated library, replaced with redis
-from redis.asyncio import Redis, ConnectionPool  # type: ignore
-from redis.exceptions import RedisError, ConnectionError, TimeoutError  # type: ignore
-from lightrag.utils import logger, get_pinyin_sort_key
-
-from lightrag.base import (
-    BaseKVStorage,
-    DocStatusStorage,
-    DocStatus,
-    DocProcessingStatus,
-)
-from ..kg.shared_storage import get_data_init_lock
 import json
+
+from redis.asyncio import ConnectionPool, Redis  # type: ignore
+from redis.exceptions import ConnectionError, RedisError, TimeoutError  # type: ignore
 
 # Import tenacity for retry logic
 from tenacity import (
+    before_sleep_log,
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
-    before_sleep_log,
 )
+
+from lightrag.base import (
+    BaseKVStorage,
+    DocProcessingStatus,
+    DocStatus,
+    DocStatusStorage,
+)
+from lightrag.utils import get_pinyin_sort_key, logger
+
+from ..kg.shared_storage import get_data_init_lock
 
 config = configparser.ConfigParser()
 config.read("config.ini", "utf-8")
@@ -328,7 +331,7 @@ class RedisKVStorage(BaseKVStorage):
             try:
                 # Check which keys already exist to determine create vs update
                 pipe = redis.pipeline()
-                for k in data.keys():
+                for k in data:
                     pipe.exists(f"{self.final_namespace}:{k}")
                 exists_results = await pipe.execute()
 
@@ -836,7 +839,6 @@ class RedisDocStatusStorage(DocStatusStorage):
 
     async def index_done_callback(self) -> None:
         """Redis handles persistence automatically"""
-        pass
 
     async def is_empty(self) -> bool:
         """Check if the storage is empty for the current workspace and namespace
@@ -880,7 +882,7 @@ class RedisDocStatusStorage(DocStatusStorage):
                 raise
 
     @redis_retry
-    async def get_by_id(self, id: str) -> Union[dict[str, Any], None]:
+    async def get_by_id(self, id: str) -> dict[str, Any] | None:
         async with self._get_redis_connection() as redis:
             try:
                 data = await redis.get(f"{self.final_namespace}:{id}")
@@ -926,8 +928,7 @@ class RedisDocStatusStorage(DocStatusStorage):
             Tuple of (list of (doc_id, DocProcessingStatus) tuples, total_count)
         """
         # Validate parameters
-        if page < 1:
-            page = 1
+        page = max(page, 1)
         if page_size < 10:
             page_size = 10
         elif page_size > 200:
@@ -1041,7 +1042,7 @@ class RedisDocStatusStorage(DocStatusStorage):
 
         return counts
 
-    async def get_doc_by_file_path(self, file_path: str) -> Union[dict[str, Any], None]:
+    async def get_doc_by_file_path(self, file_path: str) -> dict[str, Any] | None:
         """Get document by file path
 
         Args:

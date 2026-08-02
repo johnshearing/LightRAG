@@ -9,16 +9,18 @@ This script tests the LightRAG's Ollama compatibility interface, including:
 All responses use the JSON Lines format, complying with the Ollama API specification.
 """
 
+import argparse
+import json
+import time
+from collections.abc import Callable
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from enum import Enum, auto
+from pathlib import Path
+from typing import Any
+
 import pytest
 import requests
-import json
-import argparse
-import time
-from typing import Dict, Any, Optional, List, Callable
-from dataclasses import dataclass, asdict
-from datetime import datetime
-from pathlib import Path
-from enum import Enum, auto
 
 
 class ErrorCode(Enum):
@@ -82,7 +84,7 @@ class ExecutionResult:
     name: str
     success: bool
     duration: float
-    error: Optional[str] = None
+    error: str | None = None
     timestamp: str = ""
 
     def __post_init__(self):
@@ -94,7 +96,7 @@ class ExecutionStats:
     """Test execution statistics"""
 
     def __init__(self):
-        self.results: List[ExecutionResult] = []
+        self.results: list[ExecutionResult] = []
         self.start_time = datetime.now()
 
     def add_result(self, result: ExecutionResult):
@@ -142,7 +144,7 @@ class ExecutionStats:
 
 
 def make_request(
-    url: str, data: Dict[str, Any], stream: bool = False, check_status: bool = True
+    url: str, data: dict[str, Any], stream: bool = False, check_status: bool = True
 ) -> requests.Response:
     """Send an HTTP request with retry mechanism
     Args:
@@ -171,11 +173,11 @@ def make_request(
         except requests.exceptions.RequestException as e:
             if attempt == max_retries - 1:  # Last retry
                 raise
-            print(f"\nRequest failed, retrying in {retry_delay} seconds: {str(e)}")
+            print(f"\nRequest failed, retrying in {retry_delay} seconds: {e!s}")
             time.sleep(retry_delay)
 
 
-def load_config() -> Dict[str, Any]:
+def load_config() -> dict[str, Any]:
     """Load configuration file
 
     First try to load from config.json in the current directory,
@@ -190,7 +192,7 @@ def load_config() -> Dict[str, Any]:
     return DEFAULT_CONFIG
 
 
-def print_json_response(data: Dict[str, Any], title: str = "", indent: int = 2) -> None:
+def print_json_response(data: dict[str, Any], title: str = "", indent: int = 2) -> None:
     """Format and print JSON response data
     Args:
         data: Data dictionary to print
@@ -222,8 +224,8 @@ def create_chat_request_data(
     content: str,
     stream: bool = False,
     model: str = None,
-    conversation_history: List[Dict[str, str]] = None,
-) -> Dict[str, Any]:
+    conversation_history: list[dict[str, str]] = None,
+) -> dict[str, Any]:
     """Create chat request data
     Args:
         content: User message content
@@ -249,8 +251,8 @@ def create_generate_request_data(
     system: str = None,
     stream: bool = False,
     model: str = None,
-    options: Dict[str, Any] = None,
-) -> Dict[str, Any]:
+    options: dict[str, Any] = None,
+) -> dict[str, Any]:
     """Create generate request data
     Args:
         prompt: Generation prompt
@@ -416,7 +418,7 @@ def test_query_modes() -> None:
         )
 
 
-def create_error_test_data(error_type: str) -> Dict[str, Any]:
+def create_error_test_data(error_type: str) -> dict[str, Any]:
     """Create request data for error testing
     Args:
         error_type: Error type, supported:
@@ -665,8 +667,9 @@ def test_generate_error_handling() -> None:
 def test_generate_concurrent() -> None:
     """Test concurrent generate requests"""
     import asyncio
-    import aiohttp
     from contextlib import asynccontextmanager
+
+    import aiohttp
 
     @asynccontextmanager
     async def get_session():
@@ -695,7 +698,7 @@ def test_generate_concurrent() -> None:
                     raise McpError(ErrorCode.InternalError, error_msg)
                 return result
         except Exception as e:
-            error_msg = f"Request {request_id} failed: {str(e)}"
+            error_msg = f"Request {request_id} failed: {e!s}"
             if OutputControl.is_verbose():
                 print(f"\n{error_msg}")
             raise McpError(ErrorCode.InternalError, error_msg)
@@ -714,7 +717,7 @@ def test_generate_concurrent() -> None:
 
             for i, result in enumerate(results):
                 if isinstance(result, Exception):
-                    error_messages.append(f"Request {i + 1} failed: {str(result)}")
+                    error_messages.append(f"Request {i + 1} failed: {result!s}")
                 else:
                     success_results.append((i + 1, result))
 
@@ -747,7 +750,7 @@ def test_generate_concurrent() -> None:
         raise
 
 
-def get_test_cases() -> Dict[str, Callable]:
+def get_test_cases() -> dict[str, Callable]:
     """Get all available test cases
     Returns:
         A dictionary mapping test names to test functions
@@ -867,7 +870,7 @@ if __name__ == "__main__":
                     print(f"\n【Running Test: {test_name}】")
                 run_test(test_cases[test_name], test_name)
     except Exception as e:
-        print(f"\nAn error occurred: {str(e)}")
+        print(f"\nAn error occurred: {e!s}")
     finally:
         # Print test statistics
         STATS.print_summary()

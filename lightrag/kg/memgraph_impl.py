@@ -1,25 +1,25 @@
-import os
 import asyncio
+import configparser
+import os
 import random
 from dataclasses import dataclass
 from typing import final
-import configparser
 
-from ..utils import logger
-from ..base import BaseGraphStorage
-from ..types import KnowledgeGraph, KnowledgeGraphNode, KnowledgeGraphEdge
-from ..kg.shared_storage import get_data_init_lock
 import pipmaster as pm
+
+from ..base import BaseGraphStorage
+from ..kg.shared_storage import get_data_init_lock
+from ..types import KnowledgeGraph, KnowledgeGraphEdge, KnowledgeGraphNode
+from ..utils import logger
 
 if not pm.is_installed("neo4j"):
     pm.install("neo4j")
+from dotenv import load_dotenv
 from neo4j import (
     AsyncGraphDatabase,
     AsyncManagedTransaction,
 )
-from neo4j.exceptions import TransientError, ResultFailedError
-
-from dotenv import load_dotenv
+from neo4j.exceptions import ResultFailedError, TransientError
 
 # use the .env that is inside the current folder
 load_dotenv(dotenv_path=".env", override=False)
@@ -162,7 +162,7 @@ class MemgraphStorage(BaseGraphStorage):
                 )
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Error checking node existence for {node_id}: {str(e)}"
+                    f"[{self.workspace}] Error checking node existence for {node_id}: {e!s}"
                 )
                 if result is not None:
                     await (
@@ -210,7 +210,7 @@ class MemgraphStorage(BaseGraphStorage):
                 )
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Error checking edge existence between {source_node_id} and {target_node_id}: {str(e)}"
+                    f"[{self.workspace}] Error checking edge existence between {source_node_id} and {target_node_id}: {e!s}"
                 )
                 if result is not None:
                     await (
@@ -269,7 +269,7 @@ class MemgraphStorage(BaseGraphStorage):
                     await result.consume()  # Ensure result is fully consumed
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Error getting node for {node_id}: {str(e)}"
+                    f"[{self.workspace}] Error getting node for {node_id}: {e!s}"
                 )
                 raise
 
@@ -317,7 +317,7 @@ class MemgraphStorage(BaseGraphStorage):
                     await result.consume()  # Ensure result is fully consumed
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Error getting node degree for {node_id}: {str(e)}"
+                    f"[{self.workspace}] Error getting node degree for {node_id}: {e!s}"
                 )
                 raise
 
@@ -353,7 +353,7 @@ class MemgraphStorage(BaseGraphStorage):
                 await result.consume()
                 return labels
             except Exception as e:
-                logger.error(f"[{self.workspace}] Error getting all labels: {str(e)}")
+                logger.error(f"[{self.workspace}] Error getting all labels: {e!s}")
                 if result is not None:
                     await (
                         result.consume()
@@ -417,7 +417,7 @@ class MemgraphStorage(BaseGraphStorage):
                     return edges
                 except Exception as e:
                     logger.error(
-                        f"[{self.workspace}] Error getting edges for node {source_node_id}: {str(e)}"
+                        f"[{self.workspace}] Error getting edges for node {source_node_id}: {e!s}"
                     )
                     if results is not None:
                         await (
@@ -426,7 +426,7 @@ class MemgraphStorage(BaseGraphStorage):
                     raise
         except Exception as e:
             logger.error(
-                f"[{self.workspace}] Error in get_node_edges for {source_node_id}: {str(e)}"
+                f"[{self.workspace}] Error in get_node_edges for {source_node_id}: {e!s}"
             )
             raise
 
@@ -483,7 +483,7 @@ class MemgraphStorage(BaseGraphStorage):
                 return None
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Error getting edge between {source_node_id} and {target_node_id}: {str(e)}"
+                    f"[{self.workspace}] Error getting edge between {source_node_id} and {target_node_id}: {e!s}"
                 )
                 if result is not None:
                     await (
@@ -560,23 +560,23 @@ class MemgraphStorage(BaseGraphStorage):
                             initial_wait_time * (backoff_factor**attempt) + jitter
                         )
                         logger.warning(
-                            f"[{self.workspace}] Node upsert failed. Attempt #{attempt + 1} retrying in {wait_time:.3f} seconds... Error: {str(e)}"
+                            f"[{self.workspace}] Node upsert failed. Attempt #{attempt + 1} retrying in {wait_time:.3f} seconds... Error: {e!s}"
                         )
                         await asyncio.sleep(wait_time)
                     else:
                         logger.error(
-                            f"[{self.workspace}] Memgraph transient error during node upsert after {max_retries} retries: {str(e)}"
+                            f"[{self.workspace}] Memgraph transient error during node upsert after {max_retries} retries: {e!s}"
                         )
                         raise
                 else:
                     # Non-transient error, don't retry
                     logger.error(
-                        f"[{self.workspace}] Non-transient error during node upsert: {str(e)}"
+                        f"[{self.workspace}] Non-transient error during node upsert: {e!s}"
                     )
                     raise
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Unexpected error during node upsert: {str(e)}"
+                    f"[{self.workspace}] Unexpected error during node upsert: {e!s}"
                 )
                 raise
 
@@ -662,23 +662,23 @@ class MemgraphStorage(BaseGraphStorage):
                             initial_wait_time * (backoff_factor**attempt) + jitter
                         )
                         logger.warning(
-                            f"[{self.workspace}] Edge upsert failed. Attempt #{attempt + 1} retrying in {wait_time:.3f} seconds... Error: {str(e)}"
+                            f"[{self.workspace}] Edge upsert failed. Attempt #{attempt + 1} retrying in {wait_time:.3f} seconds... Error: {e!s}"
                         )
                         await asyncio.sleep(wait_time)
                     else:
                         logger.error(
-                            f"[{self.workspace}] Memgraph transient error during edge upsert after {max_retries} retries: {str(e)}"
+                            f"[{self.workspace}] Memgraph transient error during edge upsert after {max_retries} retries: {e!s}"
                         )
                         raise
                 else:
                     # Non-transient error, don't retry
                     logger.error(
-                        f"[{self.workspace}] Non-transient error during edge upsert: {str(e)}"
+                        f"[{self.workspace}] Non-transient error during edge upsert: {e!s}"
                     )
                     raise
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Unexpected error during edge upsert: {str(e)}"
+                    f"[{self.workspace}] Unexpected error during edge upsert: {e!s}"
                 )
                 raise
 
@@ -710,7 +710,7 @@ class MemgraphStorage(BaseGraphStorage):
             async with self._driver.session(database=self._DATABASE) as session:
                 await session.execute_write(_do_delete)
         except Exception as e:
-            logger.error(f"[{self.workspace}] Error during node deletion: {str(e)}")
+            logger.error(f"[{self.workspace}] Error during node deletion: {e!s}")
             raise
 
     async def remove_nodes(self, nodes: list[str]):
@@ -759,7 +759,7 @@ class MemgraphStorage(BaseGraphStorage):
                 async with self._driver.session(database=self._DATABASE) as session:
                     await session.execute_write(_do_delete_edge)
             except Exception as e:
-                logger.error(f"[{self.workspace}] Error during edge deletion: {str(e)}")
+                logger.error(f"[{self.workspace}] Error during edge deletion: {e!s}")
                 raise
 
     async def drop(self) -> dict[str, str]:
@@ -990,7 +990,7 @@ class MemgraphStorage(BaseGraphStorage):
 
             except Exception as e:
                 logger.warning(
-                    f"[{self.workspace}] Memgraph error during subgraph query: {str(e)}"
+                    f"[{self.workspace}] Memgraph error during subgraph query: {e!s}"
                 )
 
         return result
@@ -1092,7 +1092,7 @@ class MemgraphStorage(BaseGraphStorage):
                 )
                 return labels
         except Exception as e:
-            logger.error(f"[{self.workspace}] Error getting popular labels: {str(e)}")
+            logger.error(f"[{self.workspace}] Error getting popular labels: {e!s}")
             if result is not None:
                 await result.consume()
             return []
@@ -1150,7 +1150,7 @@ class MemgraphStorage(BaseGraphStorage):
                 )
                 return labels
         except Exception as e:
-            logger.error(f"[{self.workspace}] Error searching labels: {str(e)}")
+            logger.error(f"[{self.workspace}] Error searching labels: {e!s}")
             if result is not None:
                 await result.consume()
             return []

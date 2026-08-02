@@ -9,15 +9,18 @@ Requirements:
     - OpenSearch 3.x or higher with k-NN plugin enabled
 """
 
+import asyncio
+import configparser
 import os
 import re
 import ssl as ssl_module
 import time
-import asyncio
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Union, final
+from typing import Any, final
+
 import numpy as np
-import configparser
+import pipmaster as pm
 
 from ..base import (
     BaseGraphStorage,
@@ -27,18 +30,20 @@ from ..base import (
     DocStatus,
     DocStatusStorage,
 )
-from ..utils import logger, compute_mdhash_id
-from ..types import KnowledgeGraph, KnowledgeGraphNode, KnowledgeGraphEdge
 from ..constants import GRAPH_FIELD_SEP
 from ..kg.shared_storage import get_data_init_lock
-
-import pipmaster as pm
+from ..types import KnowledgeGraph, KnowledgeGraphEdge, KnowledgeGraphNode
+from ..utils import compute_mdhash_id, logger
 
 if not pm.is_installed("opensearch-py"):
     pm.install("opensearch-py")
 
 from opensearchpy import AsyncOpenSearch, helpers  # type: ignore
-from opensearchpy.exceptions import OpenSearchException, NotFoundError, RequestError  # type: ignore
+from opensearchpy.exceptions import (  # type: ignore
+    NotFoundError,
+    OpenSearchException,
+    RequestError,
+)
 
 config = configparser.ConfigParser()
 config.read("config.ini", "utf-8")
@@ -567,7 +572,7 @@ class OpenSearchDocStatusStorage(DocStatusStorage):
             await ClientManager.release_client(self.client)
             self.client = None
 
-    async def get_by_id(self, id: str) -> Union[dict[str, Any], None]:
+    async def get_by_id(self, id: str) -> dict[str, Any] | None:
         """Get a document status record by ID."""
         if not self._index_ready:
             return None
@@ -845,7 +850,7 @@ class OpenSearchDocStatusStorage(DocStatusStorage):
             logger.error(f"[{self.workspace}] Error getting all status counts: {e}")
             return {}
 
-    async def get_doc_by_file_path(self, file_path: str) -> Union[dict[str, Any], None]:
+    async def get_doc_by_file_path(self, file_path: str) -> dict[str, Any] | None:
         """Find a document status record by its file_path field."""
         if not self._index_ready:
             return None
@@ -1437,7 +1442,6 @@ class OpenSearchGraphStorage(BaseGraphStorage):
         except OpenSearchException as e:
             if _is_missing_index_error(e):
                 self._mark_indices_missing()
-            pass
         return result
 
     # --- Upsert operations ---

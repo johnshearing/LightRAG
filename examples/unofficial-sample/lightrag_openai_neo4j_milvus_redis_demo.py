@@ -1,5 +1,6 @@
-import os
 import asyncio
+import os
+
 from lightrag import LightRAG, QueryParam
 from lightrag.llm.ollama import ollama_embed, openai_complete_if_cache
 from lightrag.utils import EmbeddingFunc

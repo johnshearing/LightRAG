@@ -9,11 +9,12 @@ Updated to handle the new data format where:
 - Includes backward compatibility with legacy format
 """
 
+import json
+import time
+from typing import Any
+
 import pytest
 import requests
-import time
-import json
-from typing import Dict, Any, List, Optional
 
 # API configuration
 API_KEY = "your-secure-api-key-here-123"
@@ -23,7 +24,7 @@ BASE_URL = "http://localhost:9621"
 AUTH_HEADERS = {"Content-Type": "application/json", "X-API-Key": API_KEY}
 
 
-def validate_references_format(references: List[Dict[str, Any]]) -> bool:
+def validate_references_format(references: list[dict[str, Any]]) -> bool:
     """Validate the format of references list"""
     if not isinstance(references, list):
         print(f"❌ References should be a list, got {type(references)}")
@@ -51,7 +52,7 @@ def validate_references_format(references: List[Dict[str, Any]]) -> bool:
 
 def parse_streaming_response(
     response_text: str,
-) -> tuple[Optional[List[Dict]], List[str], List[str]]:
+) -> tuple[list[dict] | None, list[str], list[str]]:
     """Parse streaming response and extract references, response chunks, and errors"""
     references = None
     response_chunks = []
@@ -62,8 +63,7 @@ def parse_streaming_response(
     for line in lines:
         line = line.strip()
         if not line or line.startswith("data: "):
-            if line.startswith("data: "):
-                line = line[6:]  # Remove 'data: ' prefix
+            line = line.removeprefix("data: ")  # Remove 'data: ' prefix
 
         if not line:
             continue
@@ -146,7 +146,7 @@ def test_query_endpoint_references():
             return False
 
     except Exception as e:
-        print(f"❌ Test 1 failed: {str(e)}")
+        print(f"❌ Test 1 failed: {e!s}")
         return False
 
     # Test 2: References disabled
@@ -183,7 +183,7 @@ def test_query_endpoint_references():
             return False
 
     except Exception as e:
-        print(f"❌ Test 2 failed: {str(e)}")
+        print(f"❌ Test 2 failed: {e!s}")
         return False
 
     print("\n✅ /query endpoint references tests passed!")
@@ -265,7 +265,7 @@ def test_query_stream_endpoint_references():
             return False
 
     except Exception as e:
-        print(f"❌ Test 1 failed: {str(e)}")
+        print(f"❌ Test 1 failed: {e!s}")
         return False
 
     # Test 2: Streaming with references disabled
@@ -320,7 +320,7 @@ def test_query_stream_endpoint_references():
             return False
 
     except Exception as e:
-        print(f"❌ Test 2 failed: {str(e)}")
+        print(f"❌ Test 2 failed: {e!s}")
         return False
 
     print("\n✅ /query/stream endpoint references tests passed!")
@@ -365,7 +365,7 @@ def test_references_consistency():
             return False
 
     except Exception as e:
-        print(f"❌ /query test failed: {str(e)}")
+        print(f"❌ /query test failed: {e!s}")
         return False
 
     # Test /query/stream endpoint
@@ -403,7 +403,7 @@ def test_references_consistency():
             return False
 
     except Exception as e:
-        print(f"❌ /query/stream test failed: {str(e)}")
+        print(f"❌ /query/stream test failed: {e!s}")
         return False
 
     # Test /query/data endpoint
@@ -428,7 +428,7 @@ def test_references_consistency():
             return False
 
     except Exception as e:
-        print(f"❌ /query/data test failed: {str(e)}")
+        print(f"❌ /query/data test failed: {e!s}")
         return False
 
     # Compare references consistency
@@ -539,10 +539,10 @@ def test_aquery_data_endpoint():
     except requests.exceptions.Timeout:
         print("❌ Request timeout: Query processing took too long")
     except Exception as e:
-        print(f"❌ Error occurred: {str(e)}")
+        print(f"❌ Error occurred: {e!s}")
 
 
-def print_query_results(data: Dict[str, Any]):
+def print_query_results(data: dict[str, Any]):
     """Format and print query results"""
 
     # Check for new data format with status and message
@@ -698,7 +698,7 @@ def compare_with_regular_query():
             print(f"   Error details: {regular_response.text}")
 
     except Exception as e:
-        print(f"   Regular query error: {str(e)}")
+        print(f"   Regular query error: {e!s}")
 
 
 @pytest.mark.integration
@@ -717,7 +717,7 @@ def run_all_reference_tests():
         if not test_query_endpoint_references():
             all_tests_passed = False
     except Exception as e:
-        print(f"❌ /query endpoint test failed with exception: {str(e)}")
+        print(f"❌ /query endpoint test failed with exception: {e!s}")
         all_tests_passed = False
 
     # Test 2: /query/stream endpoint references
@@ -725,7 +725,7 @@ def run_all_reference_tests():
         if not test_query_stream_endpoint_references():
             all_tests_passed = False
     except Exception as e:
-        print(f"❌ /query/stream endpoint test failed with exception: {str(e)}")
+        print(f"❌ /query/stream endpoint test failed with exception: {e!s}")
         all_tests_passed = False
 
     # Test 3: References consistency across endpoints
@@ -733,7 +733,7 @@ def run_all_reference_tests():
         if not test_references_consistency():
             all_tests_passed = False
     except Exception as e:
-        print(f"❌ References consistency test failed with exception: {str(e)}")
+        print(f"❌ References consistency test failed with exception: {e!s}")
         all_tests_passed = False
 
     # Final summary

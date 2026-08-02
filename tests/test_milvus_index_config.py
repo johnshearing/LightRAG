@@ -5,15 +5,17 @@ This test suite validates the MilvusIndexConfig class and its integration
 with MilvusVectorDBStorage.
 """
 
-import pytest
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from lightrag.kg.milvus_impl import (
-    MilvusIndexConfig,
     SUPPORTED_INDEX_TYPES,
     SUPPORTED_METRIC_TYPES,
-    SUPPORTED_SQ_TYPES,
     SUPPORTED_REFINE_TYPES,
+    SUPPORTED_SQ_TYPES,
+    MilvusIndexConfig,
 )
 
 

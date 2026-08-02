@@ -1,7 +1,7 @@
 import sys
 
 if sys.version_info < (3, 9):
-    from typing import AsyncIterator
+    from collections.abc import AsyncIterator
 else:
     from collections.abc import AsyncIterator
 import pipmaster as pm  # Pipmaster for dynamic library install
@@ -9,23 +9,21 @@ import pipmaster as pm  # Pipmaster for dynamic library install
 if not pm.is_installed("aiohttp"):
     pm.install("aiohttp")
 
+
 import aiohttp
+import numpy as np
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
 
 from lightrag.exceptions import (
     APIConnectionError,
-    RateLimitError,
     APITimeoutError,
+    RateLimitError,
 )
-
-from typing import Union, List
-import numpy as np
-
 from lightrag.utils import (
     wrap_embedding_func_with_attrs,
 )
@@ -46,7 +44,7 @@ async def lollms_model_if_cache(
     enable_cot: bool = False,
     base_url="http://localhost:9600",
     **kwargs,
-) -> Union[str, AsyncIterator[str]]:
+) -> str | AsyncIterator[str]:
     """Client implementation for lollms generation."""
     if enable_cot:
         from lightrag.utils import logger
@@ -113,7 +111,7 @@ async def lollms_model_complete(
     enable_cot: bool = False,
     keyword_extraction=False,
     **kwargs,
-) -> Union[str, AsyncIterator[str]]:
+) -> str | AsyncIterator[str]:
     """Complete function for lollms model generation."""
 
     # Extract and remove keyword_extraction from kwargs if present
@@ -142,7 +140,7 @@ async def lollms_model_complete(
     embedding_dim=1024, max_token_size=8192, model_name="lollms_embedding_model"
 )
 async def lollms_embed(
-    texts: List[str], embed_model=None, base_url="http://localhost:9600", **kwargs
+    texts: list[str], embed_model=None, base_url="http://localhost:9600", **kwargs
 ) -> np.ndarray:
     """
     Generate embeddings for a list of texts using lollms server.

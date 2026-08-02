@@ -22,8 +22,9 @@ import asyncio
 import os
 import sys
 import time
-from typing import Any, Dict, List
 from dataclasses import dataclass, field
+from typing import Any
+
 from dotenv import load_dotenv
 
 # Add project root to path for imports
@@ -80,7 +81,7 @@ class CleanupStats:
     """Cleanup statistics and error tracking"""
 
     # Count by mode and cache_type before cleanup
-    counts_before: Dict[str, Dict[str, int]] = field(default_factory=dict)
+    counts_before: dict[str, dict[str, int]] = field(default_factory=dict)
 
     # Deletion statistics
     total_to_delete: int = 0
@@ -91,10 +92,10 @@ class CleanupStats:
     failed_to_delete: int = 0
 
     # Count by mode and cache_type after cleanup
-    counts_after: Dict[str, Dict[str, int]] = field(default_factory=dict)
+    counts_after: dict[str, dict[str, int]] = field(default_factory=dict)
 
     # Error tracking
-    errors: List[Dict[str, Any]] = field(default_factory=list)
+    errors: list[dict[str, Any]] = field(default_factory=list)
 
     def add_error(self, batch_idx: int, error: Exception, batch_size: int):
         """Record batch error"""
@@ -280,7 +281,7 @@ class CleanupTool:
 
         return storage
 
-    async def count_query_caches_json(self, storage) -> Dict[str, Dict[str, int]]:
+    async def count_query_caches_json(self, storage) -> dict[str, dict[str, int]]:
         """Count query caches in JsonKVStorage by mode and cache_type
 
         Args:
@@ -301,7 +302,7 @@ class CleanupTool:
 
         return counts
 
-    async def count_query_caches_redis(self, storage) -> Dict[str, Dict[str, int]]:
+    async def count_query_caches_redis(self, storage) -> dict[str, dict[str, int]]:
         """Count query caches in RedisKVStorage by mode and cache_type
 
         Args:
@@ -333,7 +334,7 @@ class CleanupTool:
         print()  # New line after progress
         return counts
 
-    async def count_query_caches_pg(self, storage) -> Dict[str, Dict[str, int]]:
+    async def count_query_caches_pg(self, storage) -> dict[str, dict[str, int]]:
         """Count query caches in PostgreSQL by mode and cache_type
 
         Args:
@@ -369,7 +370,7 @@ class CleanupTool:
 
         return counts
 
-    async def count_query_caches_mongo(self, storage) -> Dict[str, Dict[str, int]]:
+    async def count_query_caches_mongo(self, storage) -> dict[str, dict[str, int]]:
         """Count query caches in MongoDB by mode and cache_type
 
         Args:
@@ -397,7 +398,7 @@ class CleanupTool:
 
         return counts
 
-    async def count_query_caches_opensearch(self, storage) -> Dict[str, Dict[str, int]]:
+    async def count_query_caches_opensearch(self, storage) -> dict[str, dict[str, int]]:
         """Count query caches in OpenSearch by mode and cache_type."""
         counts = {mode: {"query": 0, "keywords": 0} for mode in QUERY_MODES}
 
@@ -422,7 +423,7 @@ class CleanupTool:
 
     async def count_query_caches(
         self, storage, storage_name: str
-    ) -> Dict[str, Dict[str, int]]:
+    ) -> dict[str, dict[str, int]]:
         """Count query caches from any storage type efficiently
 
         Args:
@@ -522,7 +523,7 @@ class CleanupTool:
                 stats.add_error(batch_idx + 1, e, len(batch_keys))
                 print(
                     f"Batch {batch_idx + 1}/{stats.total_batches}: ✗ FAILED - "
-                    f"{type(e).__name__}: {str(e)}"
+                    f"{type(e).__name__}: {e!s}"
                 )
 
     async def delete_query_caches_redis(
@@ -588,7 +589,7 @@ class CleanupTool:
                             stats.add_error(batch_idx, e, len(keys))
                             print(
                                 f"Batch {batch_idx}: ✗ FAILED - "
-                                f"{type(e).__name__}: {str(e)}"
+                                f"{type(e).__name__}: {e!s}"
                             )
 
                     if cursor == 0:
@@ -647,7 +648,7 @@ class CleanupTool:
 
         except Exception as e:
             stats.add_error(1, e, stats.total_to_delete)
-            print(f"✗ DELETE failed: {type(e).__name__}: {str(e)}")
+            print(f"✗ DELETE failed: {type(e).__name__}: {e!s}")
 
     async def delete_query_caches_mongo(
         self, storage, cleanup_type: str, stats: CleanupStats
@@ -693,7 +694,7 @@ class CleanupTool:
                 stats.add_error(idx, e, 0)
                 print(
                     f"Pattern {idx}/{len(patterns)}: ✗ FAILED - "
-                    f"{type(e).__name__}: {str(e)}"
+                    f"{type(e).__name__}: {e!s}"
                 )
 
         print(f"\nTotal deleted: {total_deleted:,} records")
@@ -757,7 +758,7 @@ class CleanupTool:
                 stats.add_error(batch_idx + 1, e, len(batch_keys))
                 print(
                     f"Batch {batch_idx + 1}/{stats.total_batches}: ✗ FAILED - "
-                    f"{type(e).__name__}: {str(e)}"
+                    f"{type(e).__name__}: {e!s}"
                 )
 
     async def delete_query_caches(
@@ -810,7 +811,7 @@ class CleanupTool:
         else:
             return f"{BOLD_CYAN}(default){RESET}"
 
-    def print_cache_statistics(self, counts: Dict[str, Dict[str, int]], title: str):
+    def print_cache_statistics(self, counts: dict[str, dict[str, int]], title: str):
         """Print cache statistics in a formatted table
 
         Args:
@@ -845,7 +846,7 @@ class CleanupTool:
         print("└" + "─" * 12 + "┴" + "─" * 12 + "┴" + "─" * 12 + "┴" + "─" * 12 + "┘")
 
     def calculate_total_to_delete(
-        self, counts: Dict[str, Dict[str, int]], cleanup_type: str
+        self, counts: dict[str, dict[str, int]], cleanup_type: str
     ) -> int:
         """Calculate total number of records to delete
 

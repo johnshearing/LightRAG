@@ -1,6 +1,6 @@
-from collections.abc import AsyncIterator
 import os
 import re
+from collections.abc import AsyncIterator
 
 import pipmaster as pm
 
@@ -8,34 +8,32 @@ import pipmaster as pm
 if not pm.is_installed("ollama"):
     pm.install("ollama")
 
-import ollama
-
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-)
-from lightrag.exceptions import (
-    APIConnectionError,
-    RateLimitError,
-    APITimeoutError,
-)
-from lightrag.api import __api_version__
 
 import numpy as np
-from typing import Optional, Union
-from lightrag.utils import (
-    wrap_embedding_func_with_attrs,
-    logger,
+import ollama
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
 )
 
+from lightrag.api import __api_version__
+from lightrag.exceptions import (
+    APIConnectionError,
+    APITimeoutError,
+    RateLimitError,
+)
+from lightrag.utils import (
+    logger,
+    wrap_embedding_func_with_attrs,
+)
 
 _OLLAMA_CLOUD_HOST = "https://ollama.com"
 _CLOUD_MODEL_SUFFIX_PATTERN = re.compile(r"(?:-cloud|:cloud)$")
 
 
-def _coerce_host_for_cloud_model(host: Optional[str], model: object) -> Optional[str]:
+def _coerce_host_for_cloud_model(host: str | None, model: object) -> str | None:
     if host:
         return host
     try:
@@ -65,7 +63,7 @@ async def _ollama_model_if_cache(
     history_messages=[],
     enable_cot: bool = False,
     **kwargs,
-) -> Union[str, AsyncIterator[str]]:
+) -> str | AsyncIterator[str]:
     if enable_cot:
         logger.debug("enable_cot=True is not supported for ollama and will be ignored.")
     stream = True if kwargs.get("stream") else False
@@ -108,7 +106,7 @@ async def _ollama_model_if_cache(
                     async for chunk in response:
                         yield chunk["message"]["content"]
                 except Exception as e:
-                    logger.error(f"Error in stream response: {str(e)}")
+                    logger.error(f"Error in stream response: {e!s}")
                     raise
                 finally:
                     try:
@@ -157,7 +155,7 @@ async def ollama_model_complete(
     enable_cot: bool = False,
     keyword_extraction=False,
     **kwargs,
-) -> Union[str, AsyncIterator[str]]:
+) -> str | AsyncIterator[str]:
     keyword_extraction = kwargs.pop("keyword_extraction", None)
     if keyword_extraction:
         kwargs["format"] = "json"
@@ -226,7 +224,7 @@ async def ollama_embed(
         )
         return np.array(data["embeddings"])
     except Exception as e:
-        logger.error(f"Error in ollama_embed: {str(e)}")
+        logger.error(f"Error in ollama_embed: {e!s}")
         try:
             await ollama_client._client.aclose()
             logger.debug("Successfully closed Ollama client after exception in embed")

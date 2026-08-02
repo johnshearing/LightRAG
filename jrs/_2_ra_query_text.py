@@ -3,11 +3,12 @@
 # For usage instructions enter the following command:
 # python3 path_to_this_script/_2_ra_query_text.py --help
 
-import os
 import argparse
 import asyncio
+import os
 
 from raganything import RAGAnything, RAGAnythingConfig
+
 from lightrag.llm.openai import openai_complete_if_cache, openai_embed
 from lightrag.utils import EmbeddingFunc
 

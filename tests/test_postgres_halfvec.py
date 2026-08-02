@@ -1,14 +1,16 @@
-import pytest
+from unittest.mock import AsyncMock, patch
+
 import numpy as np
-from unittest.mock import patch, AsyncMock
-from lightrag.utils import EmbeddingFunc
+import pytest
+
+from lightrag.exceptions import DataMigrationError
 from lightrag.kg.postgres_impl import (
     PGVectorStorage,
     PostgreSQLDB,
     _safe_index_name,
 )
-from lightrag.exceptions import DataMigrationError
 from lightrag.namespace import NameSpace
+from lightrag.utils import EmbeddingFunc
 
 
 # Mock PostgreSQLDB
@@ -230,8 +232,8 @@ async def test_create_vector_index_drops_old_indexes_when_switching(mock_pg_db):
 
     async def mock_query(sql, params=None, multirows=False, **kwargs):
         if "pg_indexes" in sql:
-            return None
-        return None
+            return
+        return
 
     mock_pg_db.query = AsyncMock(side_effect=mock_query)
     mock_pg_db.execute = AsyncMock()

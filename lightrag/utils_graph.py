@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import time
 import asyncio
+import time
 from typing import Any, cast
 
-from .base import DeletionResult
-from .kg.shared_storage import get_storage_keyed_lock
+from .base import DeletionResult, StorageNameSpace
 from .constants import GRAPH_FIELD_SEP
+from .kg.shared_storage import get_storage_keyed_lock
 from .utils import compute_mdhash_id, logger
-from .base import StorageNameSpace
 
 
 def _require_non_empty_description(
@@ -306,10 +305,7 @@ async def _edit_entity_impl(
     new_node_data = {**node_data, **updated_data}
     new_node_data["entity_id"] = new_entity_name
 
-    if "entity_name" in new_node_data:
-        del new_node_data[
-            "entity_name"
-        ]  # Node data should not contain entity_name field
+    new_node_data.pop("entity_name", None)  # Node data should not contain entity_name field
 
     if is_renaming:
         logger.info(f"Entity Edit: renaming `{entity_name}` to `{new_entity_name}`")
@@ -399,7 +395,7 @@ async def _edit_entity_impl(
     await entities_vdb.upsert(entity_data)
 
     if entity_chunks_storage is not None or relation_chunks_storage is not None:
-        from .utils import make_relation_chunk_key, compute_incremental_chunk_ids
+        from .utils import compute_incremental_chunk_ids, make_relation_chunk_key
 
         if entity_chunks_storage is not None:
             storage_key = original_entity_name if is_renaming else entity_name
@@ -831,8 +827,8 @@ async def aedit_relation(
             #    - relation_chunks_storage has no existing data (migration/initialization scenario)
             if relation_chunks_storage is not None:
                 from .utils import (
-                    make_relation_chunk_key,
                     compute_incremental_chunk_ids,
+                    make_relation_chunk_key,
                 )
 
                 storage_key = make_relation_chunk_key(source_entity, target_entity)

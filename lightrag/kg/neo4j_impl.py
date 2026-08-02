@@ -1,35 +1,35 @@
+import configparser
+import logging
 import os
 import re
 from dataclasses import dataclass
 from typing import final
-import configparser
 
-
+import pipmaster as pm
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
 
-import logging
-from ..utils import logger
 from ..base import BaseGraphStorage
-from ..types import KnowledgeGraph, KnowledgeGraphNode, KnowledgeGraphEdge
 from ..kg.shared_storage import get_data_init_lock
-import pipmaster as pm
+from ..types import KnowledgeGraph, KnowledgeGraphEdge, KnowledgeGraphNode
+from ..utils import logger
 
 if not pm.is_installed("neo4j"):
     pm.install("neo4j")
 
+from dotenv import load_dotenv
 from neo4j import (  # type: ignore
-    AsyncGraphDatabase,
-    exceptions as neo4jExceptions,
     AsyncDriver,
+    AsyncGraphDatabase,
     AsyncManagedTransaction,
 )
-
-from dotenv import load_dotenv
+from neo4j import (
+    exceptions as neo4jExceptions,
+)
 
 # use the .env that is inside the current folder
 # allows to use different .env file for each lightrag instance
@@ -275,7 +275,7 @@ class Neo4JStorage(BaseGraphStorage):
                             )
                     except Exception as e:
                         logger.warning(
-                            f"[{self.workspace}] Failed to create B-Tree index: {str(e)}"
+                            f"[{self.workspace}] Failed to create B-Tree index: {e!s}"
                         )
 
                     # Create full-text index for entity_id for faster text searches
@@ -324,7 +324,7 @@ class Neo4JStorage(BaseGraphStorage):
                         )
                     except Exception as drop_error:
                         logger.warning(
-                            f"[{self.workspace}] Failed to drop legacy index: {str(drop_error)}"
+                            f"[{self.workspace}] Failed to drop legacy index: {drop_error!s}"
                         )
 
                 # Check if index exists and is online
@@ -367,7 +367,7 @@ class Neo4JStorage(BaseGraphStorage):
                             )
                         except Exception as drop_error:
                             logger.warning(
-                                f"[{self.workspace}] Failed to drop existing index: {str(drop_error)}"
+                                f"[{self.workspace}] Failed to drop existing index: {drop_error!s}"
                             )
 
                     # Create new index with CJK analyzer
@@ -394,7 +394,7 @@ class Neo4JStorage(BaseGraphStorage):
                     except Exception as cjk_error:
                         # Fallback to standard analyzer if CJK is not supported
                         logger.warning(
-                            f"[{self.workspace}] CJK analyzer not supported: {str(cjk_error)}. "
+                            f"[{self.workspace}] CJK analyzer not supported: {cjk_error!s}. "
                             "Falling back to standard analyzer."
                         )
                         create_index_query = f"""
@@ -417,7 +417,7 @@ class Neo4JStorage(BaseGraphStorage):
                 )
             else:
                 logger.error(
-                    f"[{self.workspace}] Failed to create or verify full-text index '{index_name}': {str(e)}"
+                    f"[{self.workspace}] Failed to create or verify full-text index '{index_name}': {e!s}"
                 )
 
     async def finalize(self):
@@ -462,7 +462,7 @@ class Neo4JStorage(BaseGraphStorage):
                 return single_result["node_exists"]
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Error checking node existence for {node_id}: {str(e)}"
+                    f"[{self.workspace}] Error checking node existence for {node_id}: {e!s}"
                 )
                 if result is not None:
                     await result.consume()  # Ensure results are consumed even on error
@@ -504,7 +504,7 @@ class Neo4JStorage(BaseGraphStorage):
                 return single_result["edgeExists"]
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Error checking edge existence between {source_node_id} and {target_node_id}: {str(e)}"
+                    f"[{self.workspace}] Error checking edge existence between {source_node_id} and {target_node_id}: {e!s}"
                 )
                 if result is not None:
                     await result.consume()  # Ensure results are consumed even on error
@@ -560,7 +560,7 @@ class Neo4JStorage(BaseGraphStorage):
                     await result.consume()  # Ensure result is fully consumed
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Error getting node for {node_id}: {str(e)}"
+                    f"[{self.workspace}] Error getting node for {node_id}: {e!s}"
                 )
                 raise
 
@@ -646,7 +646,7 @@ class Neo4JStorage(BaseGraphStorage):
                     await result.consume()  # Ensure result is fully consumed
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Error getting node degree for {node_id}: {str(e)}"
+                    f"[{self.workspace}] Error getting node degree for {node_id}: {e!s}"
                 )
                 raise
 
@@ -800,7 +800,7 @@ class Neo4JStorage(BaseGraphStorage):
                         except (KeyError, TypeError, ValueError) as e:
                             logger.error(
                                 f"[{self.workspace}] Error processing edge properties between {source_node_id} "
-                                f"and {target_node_id}: {str(e)}"
+                                f"and {target_node_id}: {e!s}"
                             )
                             # Return default edge properties on error
                             return {
@@ -820,7 +820,7 @@ class Neo4JStorage(BaseGraphStorage):
 
         except Exception as e:
             logger.error(
-                f"[{self.workspace}] Error in get_edge between {source_node_id} and {target_node_id}: {str(e)}"
+                f"[{self.workspace}] Error in get_edge between {source_node_id} and {target_node_id}: {e!s}"
             )
             raise
 
@@ -930,7 +930,7 @@ class Neo4JStorage(BaseGraphStorage):
                     return edges
                 except Exception as e:
                     logger.error(
-                        f"[{self.workspace}] Error getting edges for node {source_node_id}: {str(e)}"
+                        f"[{self.workspace}] Error getting edges for node {source_node_id}: {e!s}"
                     )
                     if results is not None:
                         await (
@@ -939,7 +939,7 @@ class Neo4JStorage(BaseGraphStorage):
                     raise
         except Exception as e:
             logger.error(
-                f"[{self.workspace}] Error in get_node_edges for {source_node_id}: {str(e)}"
+                f"[{self.workspace}] Error in get_node_edges for {source_node_id}: {e!s}"
             )
             raise
 
@@ -1069,7 +1069,7 @@ class Neo4JStorage(BaseGraphStorage):
 
                 await session.execute_write(execute_upsert)
         except Exception as e:
-            logger.error(f"[{self.workspace}] Error during upsert: {str(e)}")
+            logger.error(f"[{self.workspace}] Error during upsert: {e!s}")
             raise
 
     @retry(
@@ -1130,7 +1130,7 @@ class Neo4JStorage(BaseGraphStorage):
 
                 await session.execute_write(execute_upsert)
         except Exception as e:
-            logger.error(f"[{self.workspace}] Error during edge upsert: {str(e)}")
+            logger.error(f"[{self.workspace}] Error during edge upsert: {e!s}")
             raise
 
     async def get_knowledge_graph(
@@ -1341,7 +1341,7 @@ class Neo4JStorage(BaseGraphStorage):
                     )
 
             except neo4jExceptions.ClientError as e:
-                logger.warning(f"[{self.workspace}] APOC plugin error: {str(e)}")
+                logger.warning(f"[{self.workspace}] APOC plugin error: {e!s}")
                 if node_label != "*":
                     logger.warning(
                         f"[{self.workspace}] Neo4j: falling back to basic Cypher recursive search..."
@@ -1580,7 +1580,7 @@ class Neo4JStorage(BaseGraphStorage):
             async with self._driver.session(database=self._DATABASE) as session:
                 await session.execute_write(_do_delete)
         except Exception as e:
-            logger.error(f"[{self.workspace}] Error during node deletion: {str(e)}")
+            logger.error(f"[{self.workspace}] Error during node deletion: {e!s}")
             raise
 
     @retry(
@@ -1648,7 +1648,7 @@ class Neo4JStorage(BaseGraphStorage):
                 async with self._driver.session(database=self._DATABASE) as session:
                     await session.execute_write(_do_delete_edge)
             except Exception as e:
-                logger.error(f"[{self.workspace}] Error during edge deletion: {str(e)}")
+                logger.error(f"[{self.workspace}] Error during edge deletion: {e!s}")
                 raise
 
     async def get_all_nodes(self) -> list[dict]:
@@ -1736,7 +1736,7 @@ class Neo4JStorage(BaseGraphStorage):
                 return labels
             except Exception as e:
                 logger.error(
-                    f"[{self.workspace}] Error getting popular labels: {str(e)}"
+                    f"[{self.workspace}] Error getting popular labels: {e!s}"
                 )
                 if result is not None:
                     await result.consume()
@@ -1820,7 +1820,7 @@ class Neo4JStorage(BaseGraphStorage):
         except Exception as e:
             # If the full-text search fails, fall back to CONTAINS search
             logger.warning(
-                f"[{self.workspace}] Full-text search failed with error: {str(e)}. "
+                f"[{self.workspace}] Full-text search failed with error: {e!s}. "
                 "Falling back to slower, non-indexed search."
             )
 

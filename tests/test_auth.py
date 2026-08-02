@@ -93,7 +93,7 @@ def test_hash_password_returns_prefixed_value(auth_module):
 
     assert hashed.startswith(BCRYPT_PASSWORD_PREFIX)
     raw_hash = hashed[len(BCRYPT_PASSWORD_PREFIX) :]
-    assert bcrypt.checkpw("new_password".encode("utf-8"), raw_hash.encode("utf-8"))
+    assert bcrypt.checkpw(b"new_password", raw_hash.encode("utf-8"))
 
 
 def test_hash_password_cli_outputs_auth_accounts_entry(capsys):
@@ -105,4 +105,4 @@ def test_hash_password_cli_outputs_auth_accounts_entry(capsys):
     assert username == "admin"
     assert hashed.startswith(BCRYPT_PASSWORD_PREFIX)
     raw_hash = hashed[len(BCRYPT_PASSWORD_PREFIX) :]
-    assert bcrypt.checkpw("secret".encode("utf-8"), raw_hash.encode("utf-8"))
+    assert bcrypt.checkpw(b"secret", raw_hash.encode("utf-8"))

@@ -5,10 +5,11 @@ All tests use mocks — no running OpenSearch instance required.
 Run with: pytest tests/test_opensearch_storage.py -v
 """
 
-import pytest
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, patch
+
 import numpy as np
+import pytest
 
 pytest.importorskip(
     "opensearchpy",
@@ -16,17 +17,18 @@ pytest.importorskip(
 )
 
 from opensearchpy.exceptions import NotFoundError, OpenSearchException  # type: ignore
+
+from lightrag.base import DocProcessingStatus, DocStatus
 from lightrag.kg.opensearch_impl import (
-    OpenSearchKVStorage,
+    ClientManager,
     OpenSearchDocStatusStorage,
     OpenSearchGraphStorage,
+    OpenSearchKVStorage,
     OpenSearchVectorDBStorage,
-    ClientManager,
     _build_index_name,
     _resolve_workspace,
     _sanitize_index_name,
 )
-from lightrag.base import DocStatus, DocProcessingStatus
 
 pytestmark = pytest.mark.offline
 

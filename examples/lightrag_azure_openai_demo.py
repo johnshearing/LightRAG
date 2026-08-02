@@ -1,11 +1,13 @@
-import os
 import asyncio
-from lightrag import LightRAG, QueryParam
-from lightrag.utils import EmbeddingFunc
+import logging
+import os
+
 import numpy as np
 from dotenv import load_dotenv
-import logging
 from openai import AzureOpenAI
+
+from lightrag import LightRAG, QueryParam
+from lightrag.utils import EmbeddingFunc
 
 logging.basicConfig(level=logging.INFO)
 

@@ -1,12 +1,12 @@
+import asyncio
 import os
 
-from lightrag import LightRAG, QueryParam
-from lightrag.llm.hf import hf_model_complete, hf_embed
-from lightrag.utils import EmbeddingFunc
+import nest_asyncio
 from transformers import AutoModel, AutoTokenizer
 
-import asyncio
-import nest_asyncio
+from lightrag import LightRAG, QueryParam
+from lightrag.llm.hf import hf_embed, hf_model_complete
+from lightrag.utils import EmbeddingFunc
 
 nest_asyncio.apply()
 

@@ -1,12 +1,13 @@
-import os
-import json
-import time
 import asyncio
+import json
+import os
+import time
+
 import numpy as np
 
 from lightrag import LightRAG
-from lightrag.utils import EmbeddingFunc
 from lightrag.llm.openai import openai_complete_if_cache, openai_embed
+from lightrag.utils import EmbeddingFunc
 
 
 ## For Upstage API

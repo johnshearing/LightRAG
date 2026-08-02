@@ -484,7 +484,7 @@ error.
 2. What color is wire 110?
    Answer: Blue.
 3. What does wire 110 do?
-   Answer: 1. It is used to energize Relay CR-ON. 
+   Answer: 1. It is used to energize Relay CR-ON.
            2. It is used to carry the Start/Stop Signal from the Master Machine to all Subordinate Machines.
 4. How many start/stop switches are shown on the schematic?
    Answer: 2
@@ -497,14 +497,14 @@ error.
 8. What conditions must be met in order to energize CR-BP?
    Answer: Both Start/Stop buttons must be in the on state to energize Relays CR-1 and CR-2 and the Bypass Switch must be in the on position.
 9. What components have a wired connection with the Bypass Switch and what wires are used to make the connections?
-   Answer: I will look on the schematic to verify this answer. 
+   Answer: I will look on the schematic to verify this answer.
 10. What will happen to Relay CR-BP if the Bypass Switch is set to the on possition?
     Answer: Relay CR-BP will become energized if the Start/Stop Circuit is closed.
 11. What will happen if CR-BP becomes energized?
     Answer: The machine will run.
-12. What does Relay CR-SW do? 
+12. What does Relay CR-SW do?
     Answer: Without the schematic for the subordinate machine, Relay CR-SW appears to do nothing.
-13. What components have a wired connection with Relay CR-BP and what wires are used to make the connections? 
+13. What components have a wired connection with Relay CR-BP and what wires are used to make the connections?
     Answer: I will look on the schematic to verify this answer.
 14. What is the color and type of Wire 110?
     Answer: I will look on the schematic to verify this answer.

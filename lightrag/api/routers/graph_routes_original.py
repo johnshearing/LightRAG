@@ -2,12 +2,14 @@
 This module contains all graph-related routes for the LightRAG API.
 """
 
-from typing import Optional, Dict, Any
 import traceback
-from fastapi import APIRouter, Depends, Query, HTTPException
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from lightrag.utils import logger
+
 from ..utils_api import get_combined_auth_dependency
 
 router = APIRouter(tags=["graph"])
@@ -15,7 +17,7 @@ router = APIRouter(tags=["graph"])
 
 class EntityUpdateRequest(BaseModel):
     entity_name: str
-    updated_data: Dict[str, Any]
+    updated_data: dict[str, Any]
     allow_rename: bool = False
     allow_merge: bool = False
 
@@ -23,7 +25,7 @@ class EntityUpdateRequest(BaseModel):
 class RelationUpdateRequest(BaseModel):
     source_id: str
     target_id: str
-    updated_data: Dict[str, Any]
+    updated_data: dict[str, Any]
 
 
 class EntityMergeRequest(BaseModel):
@@ -48,7 +50,7 @@ class EntityCreateRequest(BaseModel):
         min_length=1,
         examples=["Tesla"],
     )
-    entity_data: Dict[str, Any] = Field(
+    entity_data: dict[str, Any] = Field(
         ...,
         description="Dictionary containing entity properties. Common fields include 'description' and 'entity_type'.",
         examples=[
@@ -73,7 +75,7 @@ class RelationCreateRequest(BaseModel):
         min_length=1,
         examples=["Tesla"],
     )
-    relation_data: Dict[str, Any] = Field(
+    relation_data: dict[str, Any] = Field(
         ...,
         description="Dictionary containing relationship properties. Common fields include 'description', 'keywords', and 'weight'.",
         examples=[
@@ -86,7 +88,7 @@ class RelationCreateRequest(BaseModel):
     )
 
 
-def create_graph_routes(rag, api_key: Optional[str] = None):
+def create_graph_routes(rag, api_key: str | None = None):
     combined_auth = get_combined_auth_dependency(api_key)
 
     @router.get("/graph/label/list", dependencies=[Depends(combined_auth)])
@@ -100,10 +102,10 @@ def create_graph_routes(rag, api_key: Optional[str] = None):
         try:
             return await rag.get_graph_labels()
         except Exception as e:
-            logger.error(f"Error getting graph labels: {str(e)}")
+            logger.error(f"Error getting graph labels: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(
-                status_code=500, detail=f"Error getting graph labels: {str(e)}"
+                status_code=500, detail=f"Error getting graph labels: {e!s}"
             )
 
     @router.get("/graph/label/popular", dependencies=[Depends(combined_auth)])
@@ -124,10 +126,10 @@ def create_graph_routes(rag, api_key: Optional[str] = None):
         try:
             return await rag.chunk_entity_relation_graph.get_popular_labels(limit)
         except Exception as e:
-            logger.error(f"Error getting popular labels: {str(e)}")
+            logger.error(f"Error getting popular labels: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(
-                status_code=500, detail=f"Error getting popular labels: {str(e)}"
+                status_code=500, detail=f"Error getting popular labels: {e!s}"
             )
 
     @router.get("/graph/label/search", dependencies=[Depends(combined_auth)])
@@ -150,10 +152,10 @@ def create_graph_routes(rag, api_key: Optional[str] = None):
         try:
             return await rag.chunk_entity_relation_graph.search_labels(q, limit)
         except Exception as e:
-            logger.error(f"Error searching labels with query '{q}': {str(e)}")
+            logger.error(f"Error searching labels with query '{q}': {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(
-                status_code=500, detail=f"Error searching labels: {str(e)}"
+                status_code=500, detail=f"Error searching labels: {e!s}"
             )
 
     @router.get("/graphs", dependencies=[Depends(combined_auth)])
@@ -179,7 +181,7 @@ def create_graph_routes(rag, api_key: Optional[str] = None):
         try:
             # Log the label parameter to check for leading spaces
             logger.debug(
-                f"get_knowledge_graph called with label: '{label}' (length: {len(label)}, repr: {repr(label)})"
+                f"get_knowledge_graph called with label: '{label}' (length: {len(label)}, repr: {label!r})"
             )
 
             return await rag.get_knowledge_graph(
@@ -188,10 +190,10 @@ def create_graph_routes(rag, api_key: Optional[str] = None):
                 max_nodes=max_nodes,
             )
         except Exception as e:
-            logger.error(f"Error getting knowledge graph for label '{label}': {str(e)}")
+            logger.error(f"Error getting knowledge graph for label '{label}': {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(
-                status_code=500, detail=f"Error getting knowledge graph: {str(e)}"
+                status_code=500, detail=f"Error getting knowledge graph: {e!s}"
             )
 
     @router.get("/graph/entity/exists", dependencies=[Depends(combined_auth)])
@@ -211,10 +213,10 @@ def create_graph_routes(rag, api_key: Optional[str] = None):
             exists = await rag.chunk_entity_relation_graph.has_node(name)
             return {"exists": exists}
         except Exception as e:
-            logger.error(f"Error checking entity existence for '{name}': {str(e)}")
+            logger.error(f"Error checking entity existence for '{name}': {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(
-                status_code=500, detail=f"Error checking entity existence: {str(e)}"
+                status_code=500, detail=f"Error checking entity existence: {e!s}"
             )
 
     @router.post("/graph/entity/edit", dependencies=[Depends(combined_auth)])
@@ -397,14 +399,14 @@ def create_graph_routes(rag, api_key: Optional[str] = None):
             }
         except ValueError as ve:
             logger.error(
-                f"Validation error updating entity '{request.entity_name}': {str(ve)}"
+                f"Validation error updating entity '{request.entity_name}': {ve!s}"
             )
             raise HTTPException(status_code=400, detail=str(ve))
         except Exception as e:
-            logger.error(f"Error updating entity '{request.entity_name}': {str(e)}")
+            logger.error(f"Error updating entity '{request.entity_name}': {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(
-                status_code=500, detail=f"Error updating entity: {str(e)}"
+                status_code=500, detail=f"Error updating entity: {e!s}"
             )
 
     @router.post("/graph/relation/edit", dependencies=[Depends(combined_auth)])
@@ -430,16 +432,16 @@ def create_graph_routes(rag, api_key: Optional[str] = None):
             }
         except ValueError as ve:
             logger.error(
-                f"Validation error updating relation between '{request.source_id}' and '{request.target_id}': {str(ve)}"
+                f"Validation error updating relation between '{request.source_id}' and '{request.target_id}': {ve!s}"
             )
             raise HTTPException(status_code=400, detail=str(ve))
         except Exception as e:
             logger.error(
-                f"Error updating relation between '{request.source_id}' and '{request.target_id}': {str(e)}"
+                f"Error updating relation between '{request.source_id}' and '{request.target_id}': {e!s}"
             )
             logger.error(traceback.format_exc())
             raise HTTPException(
-                status_code=500, detail=f"Error updating relation: {str(e)}"
+                status_code=500, detail=f"Error updating relation: {e!s}"
             )
 
     @router.post("/graph/entity/create", dependencies=[Depends(combined_auth)])
@@ -505,14 +507,14 @@ def create_graph_routes(rag, api_key: Optional[str] = None):
             }
         except ValueError as ve:
             logger.error(
-                f"Validation error creating entity '{request.entity_name}': {str(ve)}"
+                f"Validation error creating entity '{request.entity_name}': {ve!s}"
             )
             raise HTTPException(status_code=400, detail=str(ve))
         except Exception as e:
-            logger.error(f"Error creating entity '{request.entity_name}': {str(e)}")
+            logger.error(f"Error creating entity '{request.entity_name}': {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(
-                status_code=500, detail=f"Error creating entity: {str(e)}"
+                status_code=500, detail=f"Error creating entity: {e!s}"
             )
 
     @router.post("/graph/relation/create", dependencies=[Depends(combined_auth)])
@@ -592,16 +594,16 @@ def create_graph_routes(rag, api_key: Optional[str] = None):
             }
         except ValueError as ve:
             logger.error(
-                f"Validation error creating relation between '{request.source_entity}' and '{request.target_entity}': {str(ve)}"
+                f"Validation error creating relation between '{request.source_entity}' and '{request.target_entity}': {ve!s}"
             )
             raise HTTPException(status_code=400, detail=str(ve))
         except Exception as e:
             logger.error(
-                f"Error creating relation between '{request.source_entity}' and '{request.target_entity}': {str(e)}"
+                f"Error creating relation between '{request.source_entity}' and '{request.target_entity}': {e!s}"
             )
             logger.error(traceback.format_exc())
             raise HTTPException(
-                status_code=500, detail=f"Error creating relation: {str(e)}"
+                status_code=500, detail=f"Error creating relation: {e!s}"
             )
 
     @router.post("/graph/entities/merge", dependencies=[Depends(combined_auth)])
@@ -673,16 +675,16 @@ def create_graph_routes(rag, api_key: Optional[str] = None):
             }
         except ValueError as ve:
             logger.error(
-                f"Validation error merging entities {request.entities_to_change} into '{request.entity_to_change_into}': {str(ve)}"
+                f"Validation error merging entities {request.entities_to_change} into '{request.entity_to_change_into}': {ve!s}"
             )
             raise HTTPException(status_code=400, detail=str(ve))
         except Exception as e:
             logger.error(
-                f"Error merging entities {request.entities_to_change} into '{request.entity_to_change_into}': {str(e)}"
+                f"Error merging entities {request.entities_to_change} into '{request.entity_to_change_into}': {e!s}"
             )
             logger.error(traceback.format_exc())
             raise HTTPException(
-                status_code=500, detail=f"Error merging entities: {str(e)}"
+                status_code=500, detail=f"Error merging entities: {e!s}"
             )
 
     return router

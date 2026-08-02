@@ -1,17 +1,19 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
 import asyncio
-import requests
-import os
 import json
+import os
 import platform
-import urllib.parse
 import subprocess
-from lightrag import LightRAG
-from lightrag.llm.openai import gpt_4o_mini_complete
-from lightrag.kg.shared_storage import initialize_pipeline_status
-from lightrag.utils import EmbeddingFunc
+import tkinter as tk
+import urllib.parse
+from tkinter import messagebox, ttk
+
+import requests
 from llama_index.embeddings.openai import OpenAIEmbedding
+
+from lightrag import LightRAG
+from lightrag.kg.shared_storage import initialize_pipeline_status
+from lightrag.llm.openai import gpt_4o_mini_complete
+from lightrag.utils import EmbeddingFunc
 
 # Configuration
 WORKING_DIR = "/home/js/LightRAG/jrs/work/mod_linx_text/mod_linx_work_dir"

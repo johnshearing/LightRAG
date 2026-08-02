@@ -29,15 +29,16 @@ Usage:
     python examples/lightrag_vllm_demo.py
 """
 
-import os
 import asyncio
+import os
 from functools import partial
+
 from dotenv import load_dotenv
 
 from lightrag import LightRAG, QueryParam
 from lightrag.llm.openai import openai_complete_if_cache, openai_embed
-from lightrag.utils import EmbeddingFunc
 from lightrag.rerank import jina_rerank
+from lightrag.utils import EmbeddingFunc
 
 load_dotenv()
 

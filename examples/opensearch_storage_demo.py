@@ -19,16 +19,18 @@ Usage:
 """
 
 import asyncio
+
 import numpy as np
+
+from lightrag.base import DocStatus
 from lightrag.kg.opensearch_impl import (
-    OpenSearchKVStorage,
+    ClientManager,
     OpenSearchDocStatusStorage,
     OpenSearchGraphStorage,
+    OpenSearchKVStorage,
     OpenSearchVectorDBStorage,
-    ClientManager,
 )
 from lightrag.kg.shared_storage import initialize_share_data
-from lightrag.base import DocStatus
 
 
 class MockEmbeddingFunc:

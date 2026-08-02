@@ -7,9 +7,11 @@ This test suite validates:
 """
 
 import asyncio
-import pytest
 from unittest.mock import MagicMock, patch
-from lightrag.kg.milvus_impl import MilvusVectorDBStorage, MilvusIndexConfig
+
+import pytest
+
+from lightrag.kg.milvus_impl import MilvusIndexConfig, MilvusVectorDBStorage
 
 
 @pytest.mark.offline
@@ -235,9 +237,8 @@ class TestMilvusIndexCreation:
 
         with patch(
             "lightrag.kg.milvus_impl.get_data_init_lock", return_value=mock_lock
-        ):
-            with patch.object(storage, "_create_collection_if_not_exist"):
-                asyncio.run(storage.initialize())
+        ), patch.object(storage, "_create_collection_if_not_exist"):
+            asyncio.run(storage.initialize())
 
         # get_server_version should NOT be called for HNSW
         mock_client.get_server_version.assert_not_called()
@@ -272,9 +273,8 @@ class TestMilvusIndexCreation:
 
         with patch(
             "lightrag.kg.milvus_impl.get_data_init_lock", return_value=mock_lock
-        ):
-            with patch.object(storage, "_create_collection_if_not_exist"):
-                asyncio.run(storage.initialize())
+        ), patch.object(storage, "_create_collection_if_not_exist"):
+            asyncio.run(storage.initialize())
 
         # get_server_version SHOULD be called for HNSW_SQ
         mock_client.get_server_version.assert_called_once()
@@ -311,16 +311,13 @@ class TestMilvusIndexCreation:
                 "MILVUS_DB_NAME": "lightrag",
             },
             clear=False,
-        ):
-            with patch(
-                "lightrag.kg.milvus_impl.MilvusClient", return_value=bootstrap_client
-            ) as mock_client_cls:
-                with patch(
-                    "lightrag.kg.milvus_impl.get_data_init_lock",
-                    return_value=mock_lock,
-                ):
-                    with patch.object(storage, "_create_collection_if_not_exist"):
-                        asyncio.run(storage.initialize())
+        ), patch(
+            "lightrag.kg.milvus_impl.MilvusClient", return_value=bootstrap_client
+        ) as mock_client_cls, patch(
+            "lightrag.kg.milvus_impl.get_data_init_lock",
+            return_value=mock_lock,
+        ), patch.object(storage, "_create_collection_if_not_exist"):
+            asyncio.run(storage.initialize())
 
         mock_client_cls.assert_called_once_with(
             uri="http://milvus:19530",
@@ -364,16 +361,13 @@ class TestMilvusIndexCreation:
                 "MILVUS_DB_NAME": "lightrag",
             },
             clear=False,
-        ):
-            with patch(
-                "lightrag.kg.milvus_impl.MilvusClient", return_value=bootstrap_client
-            ):
-                with patch(
-                    "lightrag.kg.milvus_impl.get_data_init_lock",
-                    return_value=mock_lock,
-                ):
-                    with patch.object(storage, "_create_collection_if_not_exist"):
-                        asyncio.run(storage.initialize())
+        ), patch(
+            "lightrag.kg.milvus_impl.MilvusClient", return_value=bootstrap_client
+        ), patch(
+            "lightrag.kg.milvus_impl.get_data_init_lock",
+            return_value=mock_lock,
+        ), patch.object(storage, "_create_collection_if_not_exist"):
+            asyncio.run(storage.initialize())
 
         bootstrap_client.list_databases.assert_called_once_with()
         bootstrap_client.create_database.assert_not_called()

@@ -1,6 +1,7 @@
-import sys
-import re
 import json
+import re
+import sys
+
 from ..utils import verbose_debug
 
 if sys.version_info < (3, 9):
@@ -13,27 +14,25 @@ import pipmaster as pm  # Pipmaster for dynamic library install
 if not pm.is_installed("zhipuai"):
     pm.install("zhipuai")
 
+
+import numpy as np
 from openai import (
     APIConnectionError,
-    RateLimitError,
     APITimeoutError,
+    RateLimitError,
 )
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
-)
-
-from lightrag.utils import (
-    wrap_embedding_func_with_attrs,
-    logger,
 )
 
 from lightrag.types import GPTKeywordExtractionFormat
-
-import numpy as np
-from typing import Union, List, Optional, Dict
+from lightrag.utils import (
+    logger,
+    wrap_embedding_func_with_attrs,
+)
 
 
 @retry(
@@ -44,15 +43,13 @@ from typing import Union, List, Optional, Dict
     ),
 )
 async def zhipu_complete_if_cache(
-    prompt: Union[str, List[Dict[str, str]]],
+    prompt: str | list[dict[str, str]],
     model: str = "glm-4-flashx",  # The most cost/performance balance model in glm-4 series
-    api_key: Optional[str] = None,
-    system_prompt: Optional[str] = None,
-    history_messages: List[Dict[str, str]] = [],
+    api_key: str | None = None,
+    system_prompt: str | None = None,
+    history_messages: list[dict[str, str]] = [],
     enable_cot: bool = False,  # LightRAG output switch: include reasoning_content as <think>...</think>
-    thinking: Optional[
-        Dict[str, object]
-    ] = None,  # Zhipu request param: use {"type": "enabled"} to enable thinking
+    thinking: dict[str, object] | None = None,  # Zhipu request param: use {"type": "enabled"} to enable thinking
     **kwargs,
 ) -> str:
     """Call Zhipu chat completions with optional official thinking support.
@@ -184,7 +181,7 @@ async def zhipu_complete(
                     high_level_keywords=[], low_level_keywords=[]
                 )
         except Exception as e:
-            logger.error(f"Error during keyword extraction: {str(e)}")
+            logger.error(f"Error during keyword extraction: {e!s}")
             return GPTKeywordExtractionFormat(
                 high_level_keywords=[], low_level_keywords=[]
             )
@@ -243,6 +240,6 @@ async def zhipu_embedding(
             )
             embeddings.append(response.data[0].embedding)
         except Exception as e:
-            raise Exception(f"Error calling ChatGLM Embedding API: {str(e)}")
+            raise Exception(f"Error calling ChatGLM Embedding API: {e!s}")
 
     return np.array(embeddings)

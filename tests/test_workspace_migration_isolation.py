@@ -8,8 +8,9 @@ Critical Bug: Migration copied ALL records from legacy table regardless of works
 causing workspace A to receive workspace B's data, violating multi-tenant isolation.
 """
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from lightrag.kg.postgres_impl import PGVectorStorage
 
@@ -129,7 +130,6 @@ class TestWorkspaceMigrationIsolation:
         async def mock_run_with_retry(operation, *args, **kwargs):
             migration_executed.append(True)
             new_table_record_count["count"] = 2  # Simulate 2 records migrated
-            return None
 
         db._run_with_retry = AsyncMock(side_effect=mock_run_with_retry)
 
@@ -144,9 +144,9 @@ class TestWorkspaceMigrationIsolation:
         )
 
         # Verify the migration was triggered
-        assert (
-            len(migration_executed) > 0
-        ), "Migration should have been executed for workspace_a"
+        assert len(migration_executed) > 0, (
+            "Migration should have been executed for workspace_a"
+        )
 
     async def test_migration_without_workspace_raises_error(self):
         """
@@ -270,7 +270,6 @@ class TestWorkspaceMigrationIsolation:
         async def mock_run_with_retry(operation, *args, **kwargs):
             migration_executed.append(True)
             new_table_count["count"] = 1  # Simulate migration
-            return None
 
         db._run_with_retry = AsyncMock(side_effect=mock_run_with_retry)
 

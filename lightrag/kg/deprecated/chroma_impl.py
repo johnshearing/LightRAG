@@ -2,11 +2,12 @@ import asyncio
 import os
 from dataclasses import dataclass
 from typing import Any, final
+
 import numpy as np
+import pipmaster as pm
 
 from lightrag.base import BaseVectorStorage
 from lightrag.utils import logger
-import pipmaster as pm
 
 if not pm.is_installed("chromadb"):
     pm.install("chromadb")
@@ -106,7 +107,7 @@ class ChromaVectorDBStorage(BaseVectorStorage):
                 "embedding_batch_num", collection_settings.get("hnsw:batch_size", 32)
             )
         except Exception as e:
-            logger.error(f"ChromaDB initialization failed: {str(e)}")
+            logger.error(f"ChromaDB initialization failed: {e!s}")
             raise
 
     async def upsert(self, data: dict[str, dict[str, Any]]) -> None:
@@ -162,7 +163,7 @@ class ChromaVectorDBStorage(BaseVectorStorage):
             return ids
 
         except Exception as e:
-            logger.error(f"Error during ChromaDB upsert: {str(e)}")
+            logger.error(f"Error during ChromaDB upsert: {e!s}")
             raise
 
     async def query(self, query: str, top_k: int) -> list[dict[str, Any]]:
@@ -197,7 +198,7 @@ class ChromaVectorDBStorage(BaseVectorStorage):
             ][:top_k]
 
         except Exception as e:
-            logger.error(f"Error during ChromaDB query: {str(e)}")
+            logger.error(f"Error during ChromaDB query: {e!s}")
             raise
 
     async def index_done_callback(self) -> None:
@@ -214,7 +215,7 @@ class ChromaVectorDBStorage(BaseVectorStorage):
             logger.info(f"Deleting entity with ID {entity_name} from {self.namespace}")
             self._collection.delete(ids=[entity_name])
         except Exception as e:
-            logger.error(f"Error during entity deletion: {str(e)}")
+            logger.error(f"Error during entity deletion: {e!s}")
             raise
 
     async def delete_entity_relation(self, entity_name: str) -> None:
@@ -242,7 +243,7 @@ class ChromaVectorDBStorage(BaseVectorStorage):
             raise
 
         except Exception as e:
-            logger.error(f"Error during prefix search in ChromaDB: {str(e)}")
+            logger.error(f"Error during prefix search in ChromaDB: {e!s}")
             raise
 
     async def get_by_id(self, id: str) -> dict[str, Any] | None:

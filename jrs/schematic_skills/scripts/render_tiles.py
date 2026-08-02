@@ -41,7 +41,7 @@ BLUE = (0.05, 0.15, 0.85)
 GREEN = (0.0, 0.5, 0.1)
 
 
-def _open_page(pdf_path: str, page_num: int) -> tuple["fitz.Document", "fitz.Page"]:
+def _open_page(pdf_path: str, page_num: int) -> tuple[fitz.Document, fitz.Page]:
     doc = fitz.open(pdf_path)
     if not 1 <= page_num <= len(doc):
         raise SystemExit(f"ERROR: page {page_num} out of range (1..{len(doc)})")
@@ -58,7 +58,7 @@ def _page_geometry(geometry_path: str | None, page_num: int) -> dict[str, Any] |
     return None
 
 
-def annotate(page: "fitz.Page", geo: dict[str, Any], show: set[str]) -> None:
+def annotate(page: fitz.Page, geo: dict[str, Any], show: set[str]) -> None:
     """Draw extraction IDs onto the page so vision corrections can cite them.
 
     Annotations are added to an in-memory copy of the PDF; the file on disk is untouched.
@@ -81,19 +81,27 @@ def annotate(page: "fitz.Page", geo: dict[str, Any], show: set[str]) -> None:
                     continue
                 anchors = [fitz.Point(pts[0][0] + 1.5, pts[0][1] - 1.0)]
             for anchor in anchors:
-                page.insert_text(anchor, cond["id"], fontsize=3.0, color=RED, fontname="helv")
+                page.insert_text(
+                    anchor, cond["id"], fontsize=3.0, color=RED, fontname="helv"
+                )
 
     if "junctions" in show:
         for j in geo.get("junctions", []):
             p = fitz.Point(j["point"][0], j["point"][1])
             page.draw_circle(p, 2.2, color=GREEN, width=0.4)
             page.insert_text(
-                fitz.Point(p.x + 2.5, p.y - 1.0), j["id"], fontsize=3.0, color=GREEN, fontname="helv"
+                fitz.Point(p.x + 2.5, p.y - 1.0),
+                j["id"],
+                fontsize=3.0,
+                color=GREEN,
+                fontname="helv",
             )
 
     if "review" in show:
         flagged = {
-            item["id"] for item in geo.get("review_queue", []) if item["kind"] == "low_confidence_label"
+            item["id"]
+            for item in geo.get("review_queue", [])
+            if item["kind"] == "low_confidence_label"
         }
         for lb in geo.get("labels", []):
             if lb["id"] not in flagged:
@@ -103,7 +111,11 @@ def annotate(page: "fitz.Page", geo: dict[str, Any], show: set[str]) -> None:
                 fitz.Rect(x0 - 0.8, y0 - 0.8, x1 + 0.8, y1 + 0.8), color=BLUE, width=0.3
             )
             page.insert_text(
-                fitz.Point(x0, y0 - 1.2), lb["id"], fontsize=2.6, color=BLUE, fontname="helv"
+                fitz.Point(x0, y0 - 1.2),
+                lb["id"],
+                fontsize=2.6,
+                color=BLUE,
+                fontname="helv",
             )
 
     if "symbols" in show:
@@ -152,7 +164,12 @@ def cmd_tiles(args: argparse.Namespace) -> None:
                     "file": name,
                     "row": r + 1,
                     "col": c + 1,
-                    "pdf_rect": [round(x0, 2), round(y0, 2), round(x1, 2), round(y1, 2)],
+                    "pdf_rect": [
+                        round(x0, 2),
+                        round(y0, 2),
+                        round(x1, 2),
+                        round(y1, 2),
+                    ],
                     "pixels": [pix.width, pix.height],
                 }
             )
@@ -171,7 +188,9 @@ def cmd_tiles(args: argparse.Namespace) -> None:
     doc.close()
     print(f"Wrote {len(index)} tiles to {out_dir} (manifest: {out_dir / 'tiles.json'})")
     for tile in index:
-        print(f"  {tile['file']}  pdf_rect={tile['pdf_rect']}  {tile['pixels'][0]}x{tile['pixels'][1]}px")
+        print(
+            f"  {tile['file']}  pdf_rect={tile['pdf_rect']}  {tile['pixels'][0]}x{tile['pixels'][1]}px"
+        )
 
 
 def cmd_region(args: argparse.Namespace) -> None:
@@ -183,7 +202,9 @@ def cmd_region(args: argparse.Namespace) -> None:
     pix = page.get_pixmap(dpi=args.dpi, clip=fitz.Rect(x0, y0, x1, y1))
     pix.save(args.output)
     doc.close()
-    print(f"Wrote {args.output} ({pix.width}x{pix.height}px) for pdf_rect=[{x0},{y0},{x1},{y1}]")
+    print(
+        f"Wrote {args.output} ({pix.width}x{pix.height}px) for pdf_rect=[{x0},{y0},{x1},{y1}]"
+    )
 
 
 def cmd_crops(args: argparse.Namespace) -> None:
@@ -191,7 +212,9 @@ def cmd_crops(args: argparse.Namespace) -> None:
     try:
         from PIL import Image, ImageDraw
     except ImportError:
-        raise SystemExit("ERROR: Pillow required for contact sheets. pip install pillow")
+        raise SystemExit(
+            "ERROR: Pillow required for contact sheets. pip install pillow"
+        )
 
     doc, page = _open_page(args.pdf_path, args.page)
     geo = _page_geometry(args.geometry, args.page)
@@ -245,13 +268,21 @@ def cmd_crops(args: argparse.Namespace) -> None:
                 crop = crop.rotate(-90, expand=True)
             # Fit the crop into the cell, leaving a strip for the id caption.
             avail_w, avail_h = cell_w - 8, cell_h - 20
-            ratio = min(avail_w / max(crop.width, 1), avail_h / max(crop.height, 1), 4.0)
-            crop = crop.resize((max(int(crop.width * ratio), 1), max(int(crop.height * ratio), 1)))
+            ratio = min(
+                avail_w / max(crop.width, 1), avail_h / max(crop.height, 1), 4.0
+            )
+            crop = crop.resize(
+                (max(int(crop.width * ratio), 1), max(int(crop.height * ratio), 1))
+            )
             cx = (i % cols) * cell_w
             cy = (i // cols) * cell_h
             sheet.paste(crop, (cx + 4, cy + 16))
-            draw.rectangle([cx, cy, cx + cell_w - 1, cy + cell_h - 1], outline="#cccccc")
-            draw.text((cx + 4, cy + 3), f"{lb['id']}  ocr='{lb['raw_ocr']}'", fill="#0033cc")
+            draw.rectangle(
+                [cx, cy, cx + cell_w - 1, cy + cell_h - 1], outline="#cccccc"
+            )
+            draw.text(
+                (cx + 4, cy + 3), f"{lb['id']}  ocr='{lb['raw_ocr']}'", fill="#0033cc"
+            )
             entries.append(
                 {
                     "id": lb["id"],
@@ -268,20 +299,26 @@ def cmd_crops(args: argparse.Namespace) -> None:
 
     (out_dir / "crops.json").write_text(json.dumps(manifest, indent=2))
     doc.close()
-    print(f"Wrote {len(manifest)} contact sheet(s) covering {len(wanted)} labels to {out_dir}")
+    print(
+        f"Wrote {len(manifest)} contact sheet(s) covering {len(wanted)} labels to {out_dir}"
+    )
     for sheet in manifest:
         print(f"  {sheet['file']}  {sheet['count']} labels")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Tiled rendering for schematic vision verification")
+    parser = argparse.ArgumentParser(
+        description="Tiled rendering for schematic vision verification"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("pdf_path", help="Path to the schematic PDF")
     common.add_argument("--page", type=int, default=1, help="Page number (default 1)")
     common.add_argument("--dpi", type=int, default=400, help="Render DPI (default 400)")
-    common.add_argument("--annotate", help="geometry.json from extract.py; draws extraction IDs")
+    common.add_argument(
+        "--annotate", help="geometry.json from extract.py; draws extraction IDs"
+    )
     common.add_argument(
         "--show",
         default="conductors,review,junctions,symbols",
@@ -292,7 +329,9 @@ def main() -> None:
     p_tiles.add_argument("-o", "--output", required=True, help="Output directory")
     p_tiles.add_argument("--rows", type=int, default=4)
     p_tiles.add_argument("--cols", type=int, default=4)
-    p_tiles.add_argument("--overlap", type=float, default=25.0, help="Tile overlap in PDF points")
+    p_tiles.add_argument(
+        "--overlap", type=float, default=25.0, help="Tile overlap in PDF points"
+    )
     p_tiles.set_defaults(func=cmd_tiles)
 
     p_region = sub.add_parser("region", parents=[common], help="Render one rectangle")
@@ -304,8 +343,12 @@ def main() -> None:
     p_crops.add_argument("pdf_path")
     p_crops.add_argument("--page", type=int, default=1)
     p_crops.add_argument("--dpi", type=int, default=600)
-    p_crops.add_argument("--geometry", required=True, help="geometry.json from extract.py")
-    p_crops.add_argument("--ids", help="Comma-separated label ids (default: the review queue)")
+    p_crops.add_argument(
+        "--geometry", required=True, help="geometry.json from extract.py"
+    )
+    p_crops.add_argument(
+        "--ids", help="Comma-separated label ids (default: the review queue)"
+    )
     p_crops.add_argument("-o", "--output", required=True, help="Output directory")
     p_crops.add_argument("--cols", type=int, default=6)
     p_crops.add_argument("--rows", type=int, default=10)

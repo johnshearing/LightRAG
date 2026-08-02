@@ -97,11 +97,17 @@ async def run(kg_path: Path, working_dir: str, doc_id: str, dry_run: bool) -> No
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Index a schematic custom KG into LightRAG")
+    parser = argparse.ArgumentParser(
+        description="Index a schematic custom KG into LightRAG"
+    )
     parser.add_argument("kg_path", help="custom_kg.json produced by build_kg.py")
-    parser.add_argument("-w", "--working_dir", required=True, help="LightRAG working directory")
+    parser.add_argument(
+        "-w", "--working_dir", required=True, help="LightRAG working directory"
+    )
     parser.add_argument("--doc-id", help="full_doc_id (default: the KG filename)")
-    parser.add_argument("--dry-run", action="store_true", help="Validate without indexing")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Validate without indexing"
+    )
     args = parser.parse_args()
 
     kg_path = Path(args.kg_path)
@@ -109,7 +115,9 @@ def main() -> None:
         print(f"ERROR: File not found: {kg_path}", file=sys.stderr)
         sys.exit(1)
 
-    asyncio.run(run(kg_path, args.working_dir, args.doc_id or kg_path.name, args.dry_run))
+    asyncio.run(
+        run(kg_path, args.working_dir, args.doc_id or kg_path.name, args.dry_run)
+    )
 
 
 if __name__ == "__main__":

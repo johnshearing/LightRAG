@@ -22,8 +22,9 @@ import asyncio
 import os
 import sys
 import time
-from typing import Any, Dict, List
 from dataclasses import dataclass, field
+from typing import Any
+
 from dotenv import load_dotenv
 
 # Add project root to path for imports
@@ -83,7 +84,7 @@ class MigrationStats:
     failed_batches: int = 0
     successful_records: int = 0
     failed_records: int = 0
-    errors: List[Dict[str, Any]] = field(default_factory=list)
+    errors: list[dict[str, Any]] = field(default_factory=list)
 
     def add_error(self, batch_idx: int, error: Exception, batch_size: int):
         """Record batch error"""
@@ -293,7 +294,7 @@ class MigrationTool:
 
         return storage
 
-    async def get_default_caches_json(self, storage) -> Dict[str, Any]:
+    async def get_default_caches_json(self, storage) -> dict[str, Any]:
         """Get default caches from JsonKVStorage
 
         Args:
@@ -314,7 +315,7 @@ class MigrationTool:
 
     async def get_default_caches_redis(
         self, storage, batch_size: int = 1000
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get default caches from RedisKVStorage with pagination
 
         Args:
@@ -394,7 +395,7 @@ class MigrationTool:
 
     async def get_default_caches_pg(
         self, storage, batch_size: int = 1000
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get default caches from PGKVStorage with pagination
 
         Args:
@@ -456,7 +457,7 @@ class MigrationTool:
 
     async def get_default_caches_mongo(
         self, storage, batch_size: int = 1000
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get default caches from MongoKVStorage with cursor-based pagination
 
         Args:
@@ -494,7 +495,7 @@ class MigrationTool:
 
     async def get_default_caches_opensearch(
         self, storage, batch_size: int = 1000
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get default caches from OpenSearchKVStorage."""
         cache_data = {}
 
@@ -508,7 +509,7 @@ class MigrationTool:
 
         return cache_data
 
-    async def get_default_caches(self, storage, storage_name: str) -> Dict[str, Any]:
+    async def get_default_caches(self, storage, storage_name: str) -> dict[str, Any]:
         """Get default caches from any storage type
 
         Args:
@@ -936,7 +937,7 @@ class MigrationTool:
         else:
             raise ValueError(f"Unsupported storage type: {storage_name}")
 
-    async def count_cache_types(self, cache_data: Dict[str, Any]) -> Dict[str, int]:
+    async def count_cache_types(self, cache_data: dict[str, Any]) -> dict[str, int]:
         """Count cache entries by type
 
         Args:
@@ -950,7 +951,7 @@ class MigrationTool:
             "summary": 0,
         }
 
-        for key in cache_data.keys():
+        for key in cache_data:
             if key.startswith("default:extract:"):
                 counts["extract"] += 1
             elif key.startswith("default:summary:"):
@@ -1091,27 +1092,7 @@ class MigrationTool:
                     else "config.ini or default"
                 )
                 print(f"- Configuration Source: {config_source}")
-            elif storage_name == "PGKVStorage":
-                config_source = (
-                    "environment variables"
-                    if all(
-                        var in os.environ
-                        for var in STORAGE_ENV_REQUIREMENTS[storage_name]
-                    )
-                    else "config.ini or defaults"
-                )
-                print(f"- Configuration Source: {config_source}")
-            elif storage_name == "MongoKVStorage":
-                config_source = (
-                    "environment variables"
-                    if all(
-                        var in os.environ
-                        for var in STORAGE_ENV_REQUIREMENTS[storage_name]
-                    )
-                    else "config.ini or defaults"
-                )
-                print(f"- Configuration Source: {config_source}")
-            elif storage_name == "OpenSearchKVStorage":
+            elif storage_name == "PGKVStorage" or storage_name == "MongoKVStorage" or storage_name == "OpenSearchKVStorage":
                 config_source = (
                     "environment variables"
                     if all(
@@ -1176,7 +1157,7 @@ class MigrationTool:
         return storage, storage_name, workspace, total_count
 
     async def migrate_caches(
-        self, source_data: Dict[str, Any], target_storage, target_storage_name: str
+        self, source_data: dict[str, Any], target_storage, target_storage_name: str
     ) -> MigrationStats:
         """Migrate caches in batches with error tracking (Legacy mode - loads all data)
 
@@ -1239,7 +1220,7 @@ class MigrationTool:
 
                 print(
                     f"Batch {batch_idx + 1}/{stats.total_batches}: ✗ FAILED - "
-                    f"{type(e).__name__}: {str(e)}"
+                    f"{type(e).__name__}: {e!s}"
                 )
 
         # Final persist
@@ -1331,7 +1312,7 @@ class MigrationTool:
 
                 print(
                     f"Batch {batch_idx}/{stats.total_batches}: ✗ FAILED - "
-                    f"{type(e).__name__}: {str(e)}"
+                    f"{type(e).__name__}: {e!s}"
                 )
 
         # Final persist

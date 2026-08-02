@@ -1,6 +1,7 @@
-import sys
-import requests
 import json
+import sys
+
+import requests
 
 # Configuration
 API_URL = "http://127.0.0.1:9621"  # Default LightRAG API port

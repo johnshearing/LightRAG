@@ -5,8 +5,10 @@ This test suite validates that MilvusIndexConfig parameters can be passed
 through vector_db_storage_cls_kwargs and that backward compatibility is maintained.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from lightrag.kg.milvus_impl import MilvusVectorDBStorage
 
 

@@ -8,21 +8,22 @@ This example shows how to:
 3. Handle different types of content (text, images, tables)
 """
 
-import os
 import argparse
 import asyncio
 import logging
 import logging.config
-from pathlib import Path
+import os
 
 # Add project root directory to Python path
 import sys
+from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent))
 
+from raganything import RAGAnything, RAGAnythingConfig
+
 from lightrag.llm.openai import openai_complete_if_cache, openai_embed
 from lightrag.utils import EmbeddingFunc, logger, set_verbose_debug
-from raganything import RAGAnything, RAGAnythingConfig
 
 
 def configure_logging():
@@ -231,7 +232,7 @@ async def process_with_rag(
         logger.info(f"Answer: {equation_result}")
 
     except Exception as e:
-        logger.error(f"Error processing with RAG: {str(e)}")
+        logger.error(f"Error processing with RAG: {e!s}")
         import traceback
 
         logger.error(traceback.format_exc())

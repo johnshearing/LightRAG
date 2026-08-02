@@ -99,24 +99,125 @@ DEFAULTS: dict[str, float] = {
 # Correction is lexicon-driven and always non-destructive: raw_ocr is preserved.
 # --------------------------------------------------------------------------------------
 WIRE_COLORS = [
-    "BLACK", "WHITE", "BLUE", "GREEN", "RED", "ORANGE", "BROWN", "GREY", "GRAY",
-    "YELLOW", "VIOLET", "PURPLE", "PINK", "TAN", "CLEAR", "SHIELD",
+    "BLACK",
+    "WHITE",
+    "BLUE",
+    "GREEN",
+    "RED",
+    "ORANGE",
+    "BROWN",
+    "GREY",
+    "GRAY",
+    "YELLOW",
+    "VIOLET",
+    "PURPLE",
+    "PINK",
+    "TAN",
+    "CLEAR",
+    "SHIELD",
 ]
 
 LEXICON = WIRE_COLORS + [
     # structure / device words
-    "TERMINAL", "TERMINALS", "TERMINAL'S", "CIRCUIT", "BREAKER", "AMP", "POWER", "SUPPLY",
-    "SPEED", "CONTROLLER", "RECEPTACLE", "INTERFACE", "DISCHARGE", "INFEED", "CABLE",
-    "CABLES", "SWITCH", "RELAY", "GROUND", "PANEL", "DISCONNECT", "PLUG", "MICRO",
-    "FEMALE", "MALE", "MINI", "PIN", "LIGHT", "MOTOR", "FUSE", "CARD", "CARDS", "DRIVE",
-    "MASTER", "REVERSE", "BYPASS", "RUN", "START", "STOP", "INPUT", "OUTPUT", "PHASE",
-    "SCHEMATIC", "ASSY", "DWG", "REV", "DATE", "SIZE", "SHEET", "TITLE", "DRAWN",
-    "WEIGHT", "NOTE", "NOTES", "CONNECTED", "NOT", "REMOVE", "INSULATION", "HEAT",
-    "SHRINK", "EXPOSED", "END", "MINIMUM", "CLEARANCE", "FROM", "WIRES", "WIRE", "KEEP",
-    "ALL", "AND", "THE", "WITH", "EXTERNAL", "DEVICE", "CONNECTION", "SEE", "DRAWINGS",
-    "INDIVIDUAL", "POINTS", "TERMINATION", "DOUBLE", "PLACE", "LABEL", "DOOR",
-    "PROPRIETARY", "INFORMATION", "CONFIDENTIAL", "PROPERTY", "SIGNAL", "TO", "OF",
-    "CONTROL", "BUS", "COMMON", "COIL", "CONTACT", "NORMALLY", "OPEN", "CLOSED",
+    "TERMINAL",
+    "TERMINALS",
+    "TERMINAL'S",
+    "CIRCUIT",
+    "BREAKER",
+    "AMP",
+    "POWER",
+    "SUPPLY",
+    "SPEED",
+    "CONTROLLER",
+    "RECEPTACLE",
+    "INTERFACE",
+    "DISCHARGE",
+    "INFEED",
+    "CABLE",
+    "CABLES",
+    "SWITCH",
+    "RELAY",
+    "GROUND",
+    "PANEL",
+    "DISCONNECT",
+    "PLUG",
+    "MICRO",
+    "FEMALE",
+    "MALE",
+    "MINI",
+    "PIN",
+    "LIGHT",
+    "MOTOR",
+    "FUSE",
+    "CARD",
+    "CARDS",
+    "DRIVE",
+    "MASTER",
+    "REVERSE",
+    "BYPASS",
+    "RUN",
+    "START",
+    "STOP",
+    "INPUT",
+    "OUTPUT",
+    "PHASE",
+    "SCHEMATIC",
+    "ASSY",
+    "DWG",
+    "REV",
+    "DATE",
+    "SIZE",
+    "SHEET",
+    "TITLE",
+    "DRAWN",
+    "WEIGHT",
+    "NOTE",
+    "NOTES",
+    "CONNECTED",
+    "NOT",
+    "REMOVE",
+    "INSULATION",
+    "HEAT",
+    "SHRINK",
+    "EXPOSED",
+    "END",
+    "MINIMUM",
+    "CLEARANCE",
+    "FROM",
+    "WIRES",
+    "WIRE",
+    "KEEP",
+    "ALL",
+    "AND",
+    "THE",
+    "WITH",
+    "EXTERNAL",
+    "DEVICE",
+    "CONNECTION",
+    "SEE",
+    "DRAWINGS",
+    "INDIVIDUAL",
+    "POINTS",
+    "TERMINATION",
+    "DOUBLE",
+    "PLACE",
+    "LABEL",
+    "DOOR",
+    "PROPRIETARY",
+    "INFORMATION",
+    "CONFIDENTIAL",
+    "PROPERTY",
+    "SIGNAL",
+    "TO",
+    "OF",
+    "CONTROL",
+    "BUS",
+    "COMMON",
+    "COIL",
+    "CONTACT",
+    "NORMALLY",
+    "OPEN",
+    "CLOSED",
 ]
 
 # Designator prefixes that identify a component tag rather than prose.
@@ -132,7 +233,9 @@ VOLTAGE_RE = re.compile(r"^[+-]?\d{1,3}\s*V(AC|DC)?$", re.IGNORECASE)
 STANDARD_AWG = {8, 10, 12, 14, 16, 18, 20, 22, 24}
 # Glyph confusions introduced by slashed-zero CAD stroke fonts, applied only to short
 # alphanumeric tokens (terminal numbers, net numbers, gauges).
-DIGIT_FIXES = str.maketrans({"I": "1", "L": "1", "O": "0", "D": "0", "G": "6", "S": "5", "B": "8"})
+DIGIT_FIXES = str.maketrans(
+    {"I": "1", "L": "1", "O": "0", "D": "0", "G": "6", "S": "5", "B": "8"}
+)
 # Terminal designations that appear next to a symbol: relay coil A1/A2, contact 11/12/14,
 # line/neutral/ground L1/L2/N/G, plug pins 1..9, supply rails +/-.
 TERMINAL_TOKEN_RE = re.compile(r"^([A-Z]{1,2}\d{0,2}|\d{1,2}|[+-])$")
@@ -283,7 +386,9 @@ class UnionFind:
             self.parent[ra] = rb
 
 
-def collect_primitives(page: "fitz.Page", layers: list[str] | None, prm: dict[str, float]):
+def collect_primitives(
+    page: fitz.Page, layers: list[str] | None, prm: dict[str, float]
+):
     """Split page vector content into glyph strokes, conductor segments, circles, boxes."""
     glyph_strokes: list[tuple[tuple[float, float], tuple[float, float]]] = []
     segments: list[dict[str, Any]] = []
@@ -311,7 +416,10 @@ def collect_primitives(page: "fitz.Page", layers: list[str] | None, prm: dict[st
             if max(w, h) > 0 and abs(w - h) < 0.6 * max(w, h):
                 circles.append(
                     {
-                        "center": (round((rect.x0 + rect.x1) / 2, 2), round((rect.y0 + rect.y1) / 2, 2)),
+                        "center": (
+                            round((rect.x0 + rect.x1) / 2, 2),
+                            round((rect.y0 + rect.y1) / 2, 2),
+                        ),
                         "diameter": round(max(w, h), 2),
                         "layer": layer,
                     }
@@ -327,7 +435,9 @@ def collect_primitives(page: "fitz.Page", layers: list[str] | None, prm: dict[st
                 if length < prm["glyph_max_len"]:
                     glyph_strokes.append((p1, p2))
                 elif wanted and length >= prm["wire_min_len"]:
-                    segments.append({"p1": p1, "p2": p2, "length": length, "layer": layer})
+                    segments.append(
+                        {"p1": p1, "p2": p2, "length": length, "layer": layer}
+                    )
             elif op == "c":
                 a, b = item[1], item[4]
                 glyph_strokes.append(((a.x, a.y), (b.x, b.y)))
@@ -335,7 +445,12 @@ def collect_primitives(page: "fitz.Page", layers: list[str] | None, prm: dict[st
                 r = item[1]
                 rects.append(
                     {
-                        "bbox": (round(r.x0, 2), round(r.y0, 2), round(r.x1, 2), round(r.y1, 2)),
+                        "bbox": (
+                            round(r.x0, 2),
+                            round(r.y0, 2),
+                            round(r.x1, 2),
+                            round(r.y1, 2),
+                        ),
                         "width": round(r.width, 2),
                         "height": round(r.height, 2),
                         "layer": layer,
@@ -382,7 +497,9 @@ def cluster_glyphs(strokes, prm: dict[str, float]) -> list[list[float]]:
     return glyphs
 
 
-def group_text_lines(glyphs: list[list[float]], prm: dict[str, float]) -> list[dict[str, Any]]:
+def group_text_lines(
+    glyphs: list[list[float]], prm: dict[str, float]
+) -> list[dict[str, Any]]:
     """Merge glyph boxes into horizontal text lines (and detect vertical/rotated text)."""
     horizontal = [g for g in glyphs if (g[3] - g[1]) <= prm["text_max_height"]]
     tall = [g for g in glyphs if (g[3] - g[1]) > prm["text_max_height"]]
@@ -394,7 +511,9 @@ def group_text_lines(glyphs: list[list[float]], prm: dict[str, float]) -> list[d
         for band in bands:
             if abs(band["yc"] - yc) < prm["line_band"]:
                 band["items"].append(g)
-                band["yc"] = (band["yc"] * (len(band["items"]) - 1) + yc) / len(band["items"])
+                band["yc"] = (band["yc"] * (len(band["items"]) - 1) + yc) / len(
+                    band["items"]
+                )
                 break
         else:
             bands.append({"yc": yc, "items": [g]})
@@ -406,7 +525,12 @@ def group_text_lines(glyphs: list[list[float]], prm: dict[str, float]) -> list[d
         for g in items[1:]:
             height = max(cur[3] - cur[1], g[3] - g[1], 3.0)
             if g[0] - cur[2] < prm["word_gap_ratio"] * height:
-                cur = [min(cur[0], g[0]), min(cur[1], g[1]), max(cur[2], g[2]), max(cur[3], g[3])]
+                cur = [
+                    min(cur[0], g[0]),
+                    min(cur[1], g[1]),
+                    max(cur[2], g[2]),
+                    max(cur[3], g[3]),
+                ]
             else:
                 lines.append({"bbox": cur, "orientation": "h"})
                 cur = list(g)
@@ -424,7 +548,7 @@ def group_text_lines(glyphs: list[list[float]], prm: dict[str, float]) -> list[d
 
 
 def ocr_lines(
-    page: "fitz.Page",
+    page: fitz.Page,
     lines: list[dict[str, Any]],
     prm: dict[str, float],
     workers: int = 8,
@@ -488,9 +612,13 @@ def ocr_lines(
         psm = "6" if (y1 - y0) > 2.2 * max(prm["text_max_height"] / 3, 1) else "7"
         proc = subprocess.run(
             [
-                "tesseract", str(crop_path), "stdout",
-                "--psm", psm,
-                "-c", f"tessedit_char_whitelist={whitelist}",
+                "tesseract",
+                str(crop_path),
+                "stdout",
+                "--psm",
+                psm,
+                "-c",
+                f"tessedit_char_whitelist={whitelist}",
             ],
             capture_output=True,
             text=True,
@@ -620,7 +748,12 @@ def trace_conductors(nodes, edges, adjacency, prm: dict[str, float]):
         boxes.append(
             {
                 "id": f"B{i:04d}",
-                "bbox": [round(min(xs), 2), round(min(ys), 2), round(max(xs), 2), round(max(ys), 2)],
+                "bbox": [
+                    round(min(xs), 2),
+                    round(min(ys), 2),
+                    round(max(xs), 2),
+                    round(max(ys), 2),
+                ],
                 "point_count": len(loop["points"]),
                 "closed": _dist(loop["points"][0], loop["points"][-1]) < 1.0,
             }
@@ -667,7 +800,8 @@ def attach_labels(conductors, labels, prm: dict[str, float]) -> None:
     a run happily adopts the spec label belonging to the run above it.
     """
     usable = [
-        lb for lb in labels
+        lb
+        for lb in labels
         if lb["orientation"] == "h" and lb.get("text") and lb["kind"] != "note"
     ]
     by_x: dict[int, list[dict[str, Any]]] = defaultdict(list)
@@ -700,9 +834,15 @@ def attach_labels(conductors, labels, prm: dict[str, float]) -> None:
                 continue
             above_gap = y - ly1
             below_gap = ly0 - y
-            if 0 < above_gap <= prm["label_attach_dy"] and lb["kind"] in NET_LABEL_KINDS:
+            if (
+                0 < above_gap <= prm["label_attach_dy"]
+                and lb["kind"] in NET_LABEL_KINDS
+            ):
                 candidates.append((above_gap, "net", cond, lb))
-            elif 0 < below_gap <= prm["label_attach_dy"] and lb["kind"] in SPEC_LABEL_KINDS:
+            elif (
+                0 < below_gap <= prm["label_attach_dy"]
+                and lb["kind"] in SPEC_LABEL_KINDS
+            ):
                 candidates.append((below_gap, "spec", cond, lb))
 
     claimed_labels: set[str] = set()
@@ -725,8 +865,10 @@ def bind_endpoints(conductors, symbols, labels, prm: dict[str, float]) -> None:
     """Bind each conductor endpoint to the nearest symbol and nearest short label."""
     radius = prm["endpoint_bind_radius"]
     short_labels = [
-        lb for lb in labels
-        if lb.get("text") and lb["kind"] in ("terminal_number", "designator", "net_number", "voltage")
+        lb
+        for lb in labels
+        if lb.get("text")
+        and lb["kind"] in ("terminal_number", "designator", "net_number", "voltage")
     ]
 
     for cond in conductors:
@@ -788,7 +930,9 @@ def build_nets(conductors) -> list[dict[str, Any]]:
     nets = []
     for k, (_, members) in enumerate(sorted(groups.items()), start=1):
         names = Counter(
-            conductors[m]["net_label"] for m in members if conductors[m].get("net_label")
+            conductors[m]["net_label"]
+            for m in members
+            if conductors[m].get("net_label")
         )
         net_id = names.most_common(1)[0][0] if names else f"NET-UNLABELLED-{k:03d}"
         nets.append(
@@ -808,8 +952,12 @@ def build_nets(conductors) -> list[dict[str, Any]]:
 # --------------------------------------------------------------------------------------
 # Assembly
 # --------------------------------------------------------------------------------------
-def extract_page(page: "fitz.Page", page_num: int, layers, prm, do_ocr: bool) -> dict[str, Any]:
-    glyph_strokes, segments, circles, rects, layer_counter = collect_primitives(page, layers, prm)
+def extract_page(
+    page: fitz.Page, page_num: int, layers, prm, do_ocr: bool
+) -> dict[str, Any]:
+    glyph_strokes, segments, circles, rects, layer_counter = collect_primitives(
+        page, layers, prm
+    )
 
     glyphs = cluster_glyphs(glyph_strokes, prm)
     lines = group_text_lines(glyphs, prm)
@@ -836,13 +984,20 @@ def extract_page(page: "fitz.Page", page_num: int, layers, prm, do_ocr: bool) ->
                 "kind": classify_label(ln.get("text", "")),
                 "orientation": ln["orientation"],
                 "bbox": bbox,
-                "center": [round((bbox[0] + bbox[2]) / 2, 2), round((bbox[1] + bbox[3]) / 2, 2)],
+                "center": [
+                    round((bbox[0] + bbox[2]) / 2, 2),
+                    round((bbox[1] + bbox[3]) / 2, 2),
+                ],
             }
         )
 
     symbols = []
     for i, c in enumerate(circles, start=1):
-        kind = "terminal_point" if c["diameter"] <= prm["terminal_dot_max_dia"] else "device_circle"
+        kind = (
+            "terminal_point"
+            if c["diameter"] <= prm["terminal_dot_max_dia"]
+            else "device_circle"
+        )
         symbols.append(
             {
                 "id": f"S{i:04d}",
@@ -885,7 +1040,8 @@ def extract_page(page: "fitz.Page", page_num: int, layers, prm, do_ocr: bool) ->
         if not c["spec_label"]:
             missing.append("spec_label")
         unbound = [
-            i for i, b in enumerate(c["endpoint_bindings"])
+            i
+            for i, b in enumerate(c["endpoint_bindings"])
             if b["symbol_id"] is None and b["label_id"] is None
         ]
         if unbound:
@@ -912,7 +1068,10 @@ def extract_page(page: "fitz.Page", page_num: int, layers, prm, do_ocr: bool) ->
 
     return {
         "page": page_num,
-        "page_size": {"width": round(page.rect.width, 2), "height": round(page.rect.height, 2)},
+        "page_size": {
+            "width": round(page.rect.width, 2),
+            "height": round(page.rect.height, 2),
+        },
         "layers": {str(k): v for k, v in layer_counter.items()},
         "labels": labels,
         "symbols": symbols,
@@ -928,16 +1087,26 @@ def extract_page(page: "fitz.Page", page_num: int, layers, prm, do_ocr: bool) ->
             "text_labels": len([lb for lb in labels if lb["orientation"] != "graphic"]),
             "labels_read": len([lb for lb in labels if lb["text"]]),
             "labels_low_confidence": len(
-                [lb for lb in labels if lb["orientation"] != "graphic" and lb["confidence"] < 0.7]
+                [
+                    lb
+                    for lb in labels
+                    if lb["orientation"] != "graphic" and lb["confidence"] < 0.7
+                ]
             ),
             "conductor_segments": len(segments),
             "conductors": len(conductors),
             "conductors_with_net_label": len([c for c in conductors if c["net_label"]]),
-            "conductors_with_spec_label": len([c for c in conductors if c["spec_label"]]),
+            "conductors_with_spec_label": len(
+                [c for c in conductors if c["spec_label"]]
+            ),
             "junctions": len(junctions),
             "boxes": len(boxes),
-            "symbols_terminal_points": len([s for s in symbols if s["kind"] == "terminal_point"]),
-            "symbols_device_circles": len([s for s in symbols if s["kind"] == "device_circle"]),
+            "symbols_terminal_points": len(
+                [s for s in symbols if s["kind"] == "terminal_point"]
+            ),
+            "symbols_device_circles": len(
+                [s for s in symbols if s["kind"] == "device_circle"]
+            ),
             "nets": len(nets),
             "nets_labelled": len([n for n in nets if n["labelled"]]),
             "review_items": len(review),
@@ -945,14 +1114,18 @@ def extract_page(page: "fitz.Page", page_num: int, layers, prm, do_ocr: bool) ->
     }
 
 
-def extract_pdf(pdf_path: str, page_num: int | None, layers, prm, do_ocr: bool) -> dict[str, Any]:
+def extract_pdf(
+    pdf_path: str, page_num: int | None, layers, prm, do_ocr: bool
+) -> dict[str, Any]:
     doc = fitz.open(pdf_path)
     result: dict[str, Any] = {
         "source_file": Path(pdf_path).name,
         "source_path": str(Path(pdf_path).resolve()),
         "total_pages": len(doc),
         "pdf_metadata": doc.metadata,
-        "has_embedded_text": any(doc[i].get_text("text").strip() for i in range(len(doc))),
+        "has_embedded_text": any(
+            doc[i].get_text("text").strip() for i in range(len(doc))
+        ),
         "params": prm,
         "pages": [],
     }
@@ -984,13 +1157,17 @@ def main() -> None:
         "--layers",
         help="Comma-separated PDF layer (OCG) names to treat as conductors, e.g. SCHEMATIC",
     )
-    parser.add_argument("--no-ocr", action="store_true", help="Skip the tesseract OCR pass")
+    parser.add_argument(
+        "--no-ocr", action="store_true", help="Skip the tesseract OCR pass"
+    )
     parser.add_argument(
         "--params",
         help="JSON object overriding tunable parameters, e.g. '{\"wire_min_len\": 4}'",
     )
     parser.add_argument(
-        "--stats-only", action="store_true", help="Print the stats block only (fast sanity check)"
+        "--stats-only",
+        action="store_true",
+        help="Print the stats block only (fast sanity check)",
     )
     args = parser.parse_args()
 
@@ -1010,7 +1187,10 @@ def main() -> None:
             "source_file": result["source_file"],
             "has_embedded_text": result["has_embedded_text"],
             "text_source": result["text_source"],
-            "pages": [{"page": p["page"], "layers": p["layers"], "stats": p["stats"]} for p in result["pages"]],
+            "pages": [
+                {"page": p["page"], "layers": p["layers"], "stats": p["stats"]}
+                for p in result["pages"]
+            ],
         }
         print(json.dumps(summary, indent=2))
         return
@@ -1020,7 +1200,9 @@ def main() -> None:
         Path(args.output).write_text(payload)
         print(f"Extracted data written to: {args.output}", file=sys.stderr)
         for page in result["pages"]:
-            print(f"  page {page['page']}: {json.dumps(page['stats'])}", file=sys.stderr)
+            print(
+                f"  page {page['page']}: {json.dumps(page['stats'])}", file=sys.stderr
+            )
     else:
         print(payload)
 

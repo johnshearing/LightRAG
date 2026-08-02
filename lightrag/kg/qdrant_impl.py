@@ -5,7 +5,7 @@ import json
 import os
 import uuid
 from dataclasses import dataclass
-from typing import Any, List, final
+from typing import Any, final
 
 import numpy as np
 import pipmaster as pm
@@ -727,7 +727,7 @@ class QdrantVectorDBStorage(BaseVectorStorage):
         # Qdrant handles persistence automatically
         pass
 
-    async def delete(self, ids: List[str]) -> None:
+    async def delete(self, ids: list[str]) -> None:
         """Delete vectors with specified IDs
 
         Args:

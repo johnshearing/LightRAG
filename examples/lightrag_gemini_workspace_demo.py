@@ -23,14 +23,16 @@ Usage:
     python lightrag_workspace_demo.py
 """
 
-import os
 import asyncio
 import json
+import os
+
 import numpy as np
+
 from lightrag import LightRAG, QueryParam
-from lightrag.llm.gemini import gemini_model_complete, gemini_embed
-from lightrag.utils import wrap_embedding_func_with_attrs
 from lightrag.constants import DEFAULT_ENTITY_TYPES
+from lightrag.llm.gemini import gemini_embed, gemini_model_complete
+from lightrag.utils import wrap_embedding_func_with_attrs
 
 
 async def llm_model_func(

@@ -1,14 +1,15 @@
 import asyncio
-import os
 import inspect
 import logging
 import logging.config
+import os
+
+import numpy as np
+import requests
+from dotenv import load_dotenv
+
 from lightrag import LightRAG, QueryParam
 from lightrag.utils import EmbeddingFunc, logger, set_verbose_debug
-
-import requests
-import numpy as np
-from dotenv import load_dotenv
 
 """This code is a modified version of lightrag_openai_demo.py"""
 
@@ -66,7 +67,7 @@ class CloudflareWorker:
             print(f"""
         Cloudflare worker responded with:
         ~~~~~~~~~~~
-        {str(response_raw)}
+        {response_raw!s}
             """)
             result = response_raw.get("result", {})
 

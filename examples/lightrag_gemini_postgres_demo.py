@@ -33,14 +33,14 @@ Usage:
     python examples/lightrag_postgres_demo.py
 """
 
-import os
 import asyncio
+import os
+
 import numpy as np
 
 from lightrag import LightRAG, QueryParam
-from lightrag.llm.gemini import gemini_model_complete, gemini_embed
+from lightrag.llm.gemini import gemini_embed, gemini_model_complete
 from lightrag.utils import setup_logger, wrap_embedding_func_with_attrs
-
 
 # --------------------------------------------------
 # Logger

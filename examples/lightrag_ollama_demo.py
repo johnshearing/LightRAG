@@ -1,14 +1,15 @@
 import asyncio
-import os
 import inspect
 import logging
 import logging.config
+import os
 from functools import partial
-from lightrag import LightRAG, QueryParam
-from lightrag.llm.ollama import ollama_model_complete, ollama_embed
-from lightrag.utils import EmbeddingFunc, logger, set_verbose_debug
 
 from dotenv import load_dotenv
+
+from lightrag import LightRAG, QueryParam
+from lightrag.llm.ollama import ollama_embed, ollama_model_complete
+from lightrag.utils import EmbeddingFunc, logger, set_verbose_debug
 
 load_dotenv(dotenv_path=".env", override=False)
 

@@ -1,120 +1,111 @@
 from __future__ import annotations
 
-import traceback
 import asyncio
 import configparser
 import inspect
 import os
 import time
+import traceback
 import warnings
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from functools import partial
 from typing import (
     Any,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Iterator,
+    Literal,
     cast,
     final,
-    Literal,
-    Optional,
-    List,
-    Dict,
-    Union,
-)
-from lightrag.prompt import PROMPTS
-from lightrag.exceptions import PipelineCancelledException
-from lightrag.constants import (
-    DEFAULT_MAX_GLEANING,
-    DEFAULT_FORCE_LLM_SUMMARY_ON_MERGE,
-    DEFAULT_TOP_K,
-    DEFAULT_CHUNK_TOP_K,
-    DEFAULT_MAX_ENTITY_TOKENS,
-    DEFAULT_MAX_RELATION_TOKENS,
-    DEFAULT_MAX_TOTAL_TOKENS,
-    DEFAULT_COSINE_THRESHOLD,
-    DEFAULT_RELATED_CHUNK_NUMBER,
-    DEFAULT_KG_CHUNK_PICK_METHOD,
-    DEFAULT_MIN_RERANK_SCORE,
-    DEFAULT_SUMMARY_MAX_TOKENS,
-    DEFAULT_SUMMARY_CONTEXT_SIZE,
-    DEFAULT_SUMMARY_LENGTH_RECOMMENDED,
-    DEFAULT_MAX_EXTRACT_INPUT_TOKENS,
-    DEFAULT_MAX_ASYNC,
-    DEFAULT_MAX_PARALLEL_INSERT,
-    DEFAULT_MAX_GRAPH_NODES,
-    DEFAULT_MAX_SOURCE_IDS_PER_ENTITY,
-    DEFAULT_MAX_SOURCE_IDS_PER_RELATION,
-    DEFAULT_ENTITY_TYPES,
-    DEFAULT_SUMMARY_LANGUAGE,
-    DEFAULT_LLM_TIMEOUT,
-    DEFAULT_EMBEDDING_TIMEOUT,
-    DEFAULT_SOURCE_IDS_LIMIT_METHOD,
-    DEFAULT_MAX_FILE_PATHS,
-    DEFAULT_FILE_PATH_MORE_PLACEHOLDER,
-)
-from lightrag.utils import get_env_value
-
-from lightrag.kg import (
-    STORAGES,
-    verify_storage_implementation,
 )
 
-
-from lightrag.kg.shared_storage import (
-    get_namespace_data,
-    get_data_init_lock,
-    get_default_workspace,
-    set_default_workspace,
-    get_namespace_lock,
-)
+from dotenv import load_dotenv
 
 from lightrag.base import (
     BaseGraphStorage,
     BaseKVStorage,
     BaseVectorStorage,
+    DeletionResult,
     DocProcessingStatus,
     DocStatus,
     DocStatusStorage,
+    OllamaServerInfos,
     QueryParam,
+    QueryResult,
     StorageNameSpace,
     StoragesStatus,
-    DeletionResult,
-    OllamaServerInfos,
-    QueryResult,
+)
+from lightrag.constants import (
+    DEFAULT_CHUNK_TOP_K,
+    DEFAULT_COSINE_THRESHOLD,
+    DEFAULT_EMBEDDING_TIMEOUT,
+    DEFAULT_ENTITY_TYPES,
+    DEFAULT_FILE_PATH_MORE_PLACEHOLDER,
+    DEFAULT_FORCE_LLM_SUMMARY_ON_MERGE,
+    DEFAULT_KG_CHUNK_PICK_METHOD,
+    DEFAULT_LLM_TIMEOUT,
+    DEFAULT_MAX_ASYNC,
+    DEFAULT_MAX_ENTITY_TOKENS,
+    DEFAULT_MAX_EXTRACT_INPUT_TOKENS,
+    DEFAULT_MAX_FILE_PATHS,
+    DEFAULT_MAX_GLEANING,
+    DEFAULT_MAX_GRAPH_NODES,
+    DEFAULT_MAX_PARALLEL_INSERT,
+    DEFAULT_MAX_RELATION_TOKENS,
+    DEFAULT_MAX_SOURCE_IDS_PER_ENTITY,
+    DEFAULT_MAX_SOURCE_IDS_PER_RELATION,
+    DEFAULT_MAX_TOTAL_TOKENS,
+    DEFAULT_MIN_RERANK_SCORE,
+    DEFAULT_RELATED_CHUNK_NUMBER,
+    DEFAULT_SOURCE_IDS_LIMIT_METHOD,
+    DEFAULT_SUMMARY_CONTEXT_SIZE,
+    DEFAULT_SUMMARY_LANGUAGE,
+    DEFAULT_SUMMARY_LENGTH_RECOMMENDED,
+    DEFAULT_SUMMARY_MAX_TOKENS,
+    DEFAULT_TOP_K,
+    GRAPH_FIELD_SEP,
+)
+from lightrag.exceptions import PipelineCancelledException
+from lightrag.kg import (
+    STORAGES,
+    verify_storage_implementation,
+)
+from lightrag.kg.shared_storage import (
+    get_data_init_lock,
+    get_default_workspace,
+    get_namespace_data,
+    get_namespace_lock,
+    set_default_workspace,
 )
 from lightrag.namespace import NameSpace
 from lightrag.operate import (
     chunking_by_token_size,
     extract_entities,
-    merge_nodes_and_edges,
     kg_query,
+    merge_nodes_and_edges,
     naive_query,
     rebuild_knowledge_from_chunks,
 )
-from lightrag.constants import GRAPH_FIELD_SEP
+from lightrag.prompt import PROMPTS
+from lightrag.types import KnowledgeGraph
 from lightrag.utils import (
-    Tokenizer,
-    TiktokenTokenizer,
     EmbeddingFunc,
+    TiktokenTokenizer,
+    Tokenizer,
     always_get_an_event_loop,
-    compute_mdhash_id,
-    lazy_external_import,
-    priority_limit_async_func_call,
-    get_content_summary,
-    sanitize_text_for_encoding,
     check_storage_env_vars,
-    generate_track_id,
+    compute_mdhash_id,
     convert_to_user_format,
+    generate_track_id,
+    get_content_summary,
+    get_env_value,
+    lazy_external_import,
     logger,
-    subtract_source_ids,
     make_relation_chunk_key,
     normalize_source_ids_limit_method,
+    priority_limit_async_func_call,
+    sanitize_text_for_encoding,
+    subtract_source_ids,
 )
-from lightrag.types import KnowledgeGraph
-from dotenv import load_dotenv
 
 # use the .env that is inside the current folder
 # allows to use different .env file for each lightrag instance
@@ -127,7 +118,7 @@ config.read("config.ini", "utf-8")
 
 
 def _chunk_fields_from_status_doc(
-    status_doc: "DocProcessingStatus",
+    status_doc: DocProcessingStatus,
 ) -> tuple[list[str], int]:
     """Return (chunks_list, chunks_count) preserved from a status document.
 
@@ -280,7 +271,7 @@ class LightRAG:
     )
     """Number of overlapping tokens between consecutive text chunks to preserve context."""
 
-    tokenizer: Optional[Tokenizer] = field(default=None)
+    tokenizer: Tokenizer | None = field(default=None)
     """
     A function that returns a Tokenizer instance.
     If None, and a `tiktoken_model_name` is provided, a TiktokenTokenizer will be created.
@@ -294,12 +285,12 @@ class LightRAG:
         [
             Tokenizer,
             str,
-            Optional[str],
+            str | None,
             bool,
             int,
             int,
         ],
-        Union[List[Dict[str, Any]], Awaitable[List[Dict[str, Any]]]],
+        list[dict[str, Any]] | Awaitable[list[dict[str, Any]]],
     ] = field(default_factory=lambda: chunking_by_token_size)
     """
     Custom chunking function for splitting text into chunks before processing.
@@ -488,7 +479,7 @@ class LightRAG:
         default=float(os.getenv("COSINE_THRESHOLD", 0.2))
     )
 
-    ollama_server_infos: Optional[OllamaServerInfos] = field(default=None)
+    ollama_server_infos: OllamaServerInfos | None = field(default=None)
     """Configuration for Ollama server information."""
 
     _storages_status: StoragesStatus = field(default=StoragesStatus.NOT_CREATED)
@@ -1639,7 +1630,7 @@ class LightRAG:
                 except Exception as e:
                     # Log deletion failure
                     async with pipeline_status_lock:
-                        error_message = f"Failed to delete entry: {doc_id} - {str(e)}"
+                        error_message = f"Failed to delete entry: {doc_id} - {e!s}"
                         logger.error(error_message)
                         pipeline_status["latest_message"] = error_message
                         pipeline_status["history_messages"].append(error_message)
@@ -2295,7 +2286,7 @@ class LightRAG:
             )
             return chunk_results
         except Exception as e:
-            error_msg = f"Failed to extract entities and relationships: {str(e)}"
+            error_msg = f"Failed to extract entities and relationships: {e!s}"
             logger.error(error_msg)
             async with pipeline_status_lock:
                 pipeline_status["latest_message"] = error_msg
@@ -2925,7 +2916,7 @@ class LightRAG:
             # Return error response
             return {
                 "status": "failure",
-                "message": f"Query failed: {str(e)}",
+                "message": f"Query failed: {e!s}",
                 "data": {},
                 "metadata": {},
                 "llm_response": {
@@ -3108,7 +3099,7 @@ class LightRAG:
         tasks = [self.doc_status.get_by_id(doc_id) for doc_id in id_list]
         # Execute tasks concurrently and gather the results. Results maintain order.
         # Type hint indicates results can be DocProcessingStatus or None if not found.
-        results_list: list[Optional[DocProcessingStatus]] = await asyncio.gather(*tasks)
+        results_list: list[DocProcessingStatus | None] = await asyncio.gather(*tasks)
 
         # Build the result dictionary, mapping found IDs to their statuses
         found_statuses: dict[str, DocProcessingStatus] = {}

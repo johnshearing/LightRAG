@@ -15,11 +15,12 @@ from functools import lru_cache
 from typing import Any
 
 import numpy as np
+import pipmaster as pm
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
 
 from lightrag.utils import (
@@ -29,8 +30,6 @@ from lightrag.utils import (
     wrap_embedding_func_with_attrs,
 )
 
-import pipmaster as pm
-
 # Install the Google Gemini client and its dependencies on demand
 if not pm.is_installed("google-genai"):
     pm.install("google-genai")
@@ -38,14 +37,13 @@ if not pm.is_installed("google-api-core"):
     pm.install("google-api-core")
 
 from google import genai  # type: ignore
-from google.genai import types  # type: ignore
 from google.api_core import exceptions as google_api_exceptions  # type: ignore
+from google.genai import types  # type: ignore
 
 
 class InvalidResponseError(Exception):
     """Custom exception class for triggering retry mechanism when Gemini returns empty responses"""
 
-    pass
 
 
 @lru_cache(maxsize=8)
@@ -605,6 +603,6 @@ async def gemini_embed(
 
 __all__ = [
     "gemini_complete_if_cache",
-    "gemini_model_complete",
     "gemini_embed",
+    "gemini_model_complete",
 ]

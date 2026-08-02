@@ -1,6 +1,7 @@
-import os
 import base64
 import json
+import os
+
 import fitz
 from openai import OpenAI
 from PIL import Image

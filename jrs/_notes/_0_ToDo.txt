@@ -1,4 +1,4 @@
-This tab uses raw axios, not the shared axiosInstance from src/api/lightrag.ts. 
-That instance carries a request interceptor which attaches the auth token, 
-so if you enable LIGHTRAG_API_KEY or AUTH_ACCOUNTS, this tab's requests will go out unauthenticated and start failing. 
+This tab uses raw axios, not the shared axiosInstance from src/api/lightrag.ts.
+That instance carries a request interceptor which attaches the auth token,
+so if you enable LIGHTRAG_API_KEY or AUTH_ACCOUNTS, this tab's requests will go out unauthenticated and start failing.
 Migrating it to axiosInstance would fix that and make the API_BASE constant unnecessary — worth doing if you plan to turn on auth.

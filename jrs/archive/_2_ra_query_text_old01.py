@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-import os
 import argparse
 import asyncio
+import os
 import sys
 from pathlib import Path
 
 from raganything import RAGAnything, RAGAnythingConfig
+
 from lightrag.llm.openai import openai_complete_if_cache, openai_embed
 from lightrag.utils import EmbeddingFunc
 

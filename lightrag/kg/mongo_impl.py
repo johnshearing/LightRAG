@@ -1,12 +1,13 @@
+import asyncio
+import configparser
 import os
 import re
 import time
 from dataclasses import dataclass, field
-import numpy as np
-import configparser
-import asyncio
+from typing import Any, final
 
-from typing import Any, Union, final
+import numpy as np
+import pipmaster as pm
 
 from ..base import (
     BaseGraphStorage,
@@ -16,22 +17,22 @@ from ..base import (
     DocStatus,
     DocStatusStorage,
 )
-from ..utils import logger, compute_mdhash_id
-from ..types import KnowledgeGraph, KnowledgeGraphNode, KnowledgeGraphEdge
 from ..constants import GRAPH_FIELD_SEP
 from ..kg.shared_storage import get_data_init_lock
-
-import pipmaster as pm
+from ..types import KnowledgeGraph, KnowledgeGraphEdge, KnowledgeGraphNode
+from ..utils import compute_mdhash_id, logger
 
 if not pm.is_installed("pymongo"):
     pm.install("pymongo")
 
-from pymongo import AsyncMongoClient  # type: ignore
-from pymongo import UpdateOne  # type: ignore
-from pymongo.asynchronous.database import AsyncDatabase  # type: ignore
+from pymongo import (
+    AsyncMongoClient,  # type: ignore
+    UpdateOne,  # type: ignore
+)
 from pymongo.asynchronous.collection import AsyncCollection  # type: ignore
-from pymongo.operations import SearchIndexModel  # type: ignore
+from pymongo.asynchronous.database import AsyncDatabase  # type: ignore
 from pymongo.errors import PyMongoError  # type: ignore
+from pymongo.operations import SearchIndexModel  # type: ignore
 
 config = configparser.ConfigParser()
 config.read("config.ini", "utf-8")
@@ -373,7 +374,7 @@ class MongoDocStatusStorage(DocStatusStorage):
             self.db = None
             self._data = None
 
-    async def get_by_id(self, id: str) -> Union[dict[str, Any], None]:
+    async def get_by_id(self, id: str) -> dict[str, Any] | None:
         return await self._data.find_one({"_id": id})
 
     async def get_by_ids(self, ids: list[str]) -> list[dict[str, Any]]:
@@ -623,8 +624,7 @@ class MongoDocStatusStorage(DocStatusStorage):
             Tuple of (list of (doc_id, DocProcessingStatus) tuples, total_count)
         """
         # Validate parameters
-        if page < 1:
-            page = 1
+        page = max(page, 1)
         if page_size < 10:
             page_size = 10
         elif page_size > 200:
@@ -710,7 +710,7 @@ class MongoDocStatusStorage(DocStatusStorage):
 
         return counts
 
-    async def get_doc_by_file_path(self, file_path: str) -> Union[dict[str, Any], None]:
+    async def get_doc_by_file_path(self, file_path: str) -> dict[str, Any] | None:
         """Get document by file path
 
         Args:
@@ -1503,7 +1503,7 @@ class MongoGraphStorage(BaseGraphStorage):
             # Handle memory limit errors specifically
             if "memory limit" in str(e).lower() or "sort exceeded" in str(e).lower():
                 logger.warning(
-                    f"[{self.workspace}] MongoDB memory limit exceeded, falling back to simple query: {str(e)}"
+                    f"[{self.workspace}] MongoDB memory limit exceeded, falling back to simple query: {e!s}"
                 )
                 # Fallback to a simple query without complex aggregation
                 try:
@@ -1518,10 +1518,10 @@ class MongoGraphStorage(BaseGraphStorage):
                     )
                 except PyMongoError as fallback_error:
                     logger.error(
-                        f"[{self.workspace}] Fallback query also failed: {str(fallback_error)}"
+                        f"[{self.workspace}] Fallback query also failed: {fallback_error!s}"
                     )
             else:
-                logger.error(f"[{self.workspace}] MongoDB query failed: {str(e)}")
+                logger.error(f"[{self.workspace}] MongoDB query failed: {e!s}")
 
         return result
 
@@ -1668,7 +1668,7 @@ class MongoGraphStorage(BaseGraphStorage):
             )
             return labels
         except Exception as e:
-            logger.error(f"[{self.workspace}] Error getting popular labels: {str(e)}")
+            logger.error(f"[{self.workspace}] Error getting popular labels: {e!s}")
             return []
 
     async def _try_atlas_text_search(self, query_strip: str, limit: int) -> list[str]:
@@ -2302,7 +2302,7 @@ class MongoVectorDBStorage(BaseVectorStorage):
             )
         except PyMongoError as e:
             logger.error(
-                f"[{self.workspace}] Error while deleting vectors from {self.namespace}: {str(e)}"
+                f"[{self.workspace}] Error while deleting vectors from {self.namespace}: {e!s}"
             )
 
     async def delete_entity(self, entity_name: str) -> None:
@@ -2328,7 +2328,7 @@ class MongoVectorDBStorage(BaseVectorStorage):
                 )
         except PyMongoError as e:
             logger.error(
-                f"[{self.workspace}] Error deleting entity {entity_name}: {str(e)}"
+                f"[{self.workspace}] Error deleting entity {entity_name}: {e!s}"
             )
 
     async def delete_entity_relation(self, entity_name: str) -> None:
@@ -2363,12 +2363,12 @@ class MongoVectorDBStorage(BaseVectorStorage):
             )
         except PyMongoError as e:
             logger.error(
-                f"[{self.workspace}] Error deleting relations for {entity_name}: {str(e)}"
+                f"[{self.workspace}] Error deleting relations for {entity_name}: {e!s}"
             )
 
         except PyMongoError as e:
             logger.error(
-                f"[{self.workspace}] Error searching by prefix in {self.namespace}: {str(e)}"
+                f"[{self.workspace}] Error searching by prefix in {self.namespace}: {e!s}"
             )
             return []
 

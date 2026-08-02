@@ -5,9 +5,10 @@ if not pm.is_installed("pyvis"):
 if not pm.is_installed("networkx"):
     pm.install("networkx")
 
+import random
+
 import networkx as nx
 from pyvis.network import Network
-import random
 
 # Load the GraphML file
 G = nx.read_graphml("./dickens/graph_chunk_entity_relation.graphml")
@@ -21,7 +22,7 @@ net.from_nx(G)
 
 # Add colors and title to nodes
 for node in net.nodes:
-    node["color"] = "#{:06x}".format(random.randint(0, 0xFFFFFF))
+    node["color"] = f"#{random.randint(0, 0xFFFFFF):06x}"
     if "description" in node:
         node["title"] = node["description"]
 

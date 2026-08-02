@@ -13,8 +13,9 @@ from the source files, as the full LightRAG package has many AI-related dependen
 References: GitHub Issue #2698
 """
 
-import re
 import os
+import re
+
 import pytest
 
 # Mark all tests as offline (no external dependencies)
@@ -178,6 +179,6 @@ class TestWorkspaceLabelSanitization:
             backtick_sequences = re.findall(r"`+", result)
             for seq in backtick_sequences:
                 # Any sequence of backticks should have an EVEN length because each ` becomes ``
-                assert (
-                    len(seq) % 2 == 0
-                ), f"Unescaped backtick found in result '{result}' for input '{inp}'"
+                assert len(seq) % 2 == 0, (
+                    f"Unescaped backtick found in result '{result}' for input '{inp}'"
+                )

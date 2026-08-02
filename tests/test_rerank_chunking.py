@@ -5,11 +5,13 @@ Tests the chunk_documents_for_rerank and aggregate_chunk_scores functions
 in lightrag/rerank.py to ensure proper document splitting and score aggregation.
 """
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
+
 from lightrag.rerank import (
-    chunk_documents_for_rerank,
     aggregate_chunk_scores,
+    chunk_documents_for_rerank,
     cohere_rerank,
 )
 

@@ -3,14 +3,14 @@ This module contains all document-related routes for the LightRAG API.
 """
 
 import asyncio
-from functools import lru_cache
-from lightrag.utils import logger, get_pinyin_sort_key
-import aiofiles
 import traceback
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Literal
+from functools import lru_cache
 from io import BytesIO
+from pathlib import Path
+from typing import Any, Literal
+
+import aiofiles
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -22,13 +22,16 @@ from fastapi import (
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from lightrag import LightRAG
+from lightrag.api.utils_api import get_combined_auth_dependency
 from lightrag.base import DeletionResult, DocProcessingStatus, DocStatus
 from lightrag.utils import (
-    generate_track_id,
     compute_mdhash_id,
+    generate_track_id,
+    get_pinyin_sort_key,
+    logger,
     sanitize_text_for_encoding,
 )
-from lightrag.api.utils_api import get_combined_auth_dependency
+
 from ..config import global_args
 
 
@@ -51,7 +54,7 @@ def _is_docling_available() -> bool:
 
 
 # Function to format datetime to ISO format string with timezone information
-def format_datetime(dt: Any) -> Optional[str]:
+def format_datetime(dt: Any) -> str | None:
     """Format datetime to ISO format string with timezone information
 
     Args:
@@ -155,7 +158,7 @@ class ScanResponse(BaseModel):
     status: Literal["scanning_started"] = Field(
         description="Status of the scanning operation"
     )
-    message: Optional[str] = Field(
+    message: str | None = Field(
         default=None, description="Additional details about the scanning operation"
     )
     track_id: str = Field(description="Tracking ID for monitoring scanning progress")
@@ -235,7 +238,7 @@ class InsertTextRequest(BaseModel):
         min_length=1,
         description="The text to insert",
     )
-    file_source: Optional[str] = Field(
+    file_source: str | None = Field(
         default=None, min_length=0, description="File Source"
     )
 
@@ -246,7 +249,7 @@ class InsertTextRequest(BaseModel):
 
     @field_validator("file_source", mode="before")
     @classmethod
-    def normalize_source_before(cls, file_source: Optional[str]) -> str:
+    def normalize_source_before(cls, file_source: str | None) -> str:
         return normalize_file_path(file_source)
 
     model_config = ConfigDict(
@@ -271,7 +274,7 @@ class InsertTextsRequest(BaseModel):
         min_length=1,
         description="The texts to insert",
     )
-    file_sources: Optional[list[str]] = Field(
+    file_sources: list[str] | None = Field(
         default=None, min_length=0, description="Sources of the texts"
     )
 
@@ -283,8 +286,8 @@ class InsertTextsRequest(BaseModel):
     @field_validator("file_sources", mode="before")
     @classmethod
     def normalize_sources_before(
-        cls, file_sources: Optional[list[str]]
-    ) -> Optional[list[str]]:
+        cls, file_sources: list[str] | None
+    ) -> list[str] | None:
         if file_sources is None:
             return None
 
@@ -404,7 +407,7 @@ Attributes:
 
 
 class DeleteDocRequest(BaseModel):
-    doc_ids: List[str] = Field(..., description="The IDs of the documents to delete.")
+    doc_ids: list[str] = Field(..., description="The IDs of the documents to delete.")
     delete_file: bool = Field(
         default=False,
         description="Whether to delete the corresponding file in the upload directory.",
@@ -416,7 +419,7 @@ class DeleteDocRequest(BaseModel):
 
     @field_validator("doc_ids", mode="after")
     @classmethod
-    def validate_doc_ids(cls, doc_ids: List[str]) -> List[str]:
+    def validate_doc_ids(cls, doc_ids: list[str]) -> list[str]:
         if not doc_ids:
             raise ValueError("Document IDs list cannot be empty")
 
@@ -463,16 +466,16 @@ class DocStatusResponse(BaseModel):
     status: DocStatus = Field(description="Current processing status")
     created_at: str = Field(description="Creation timestamp (ISO format string)")
     updated_at: str = Field(description="Last update timestamp (ISO format string)")
-    track_id: Optional[str] = Field(
+    track_id: str | None = Field(
         default=None, description="Tracking ID for monitoring progress"
     )
-    chunks_count: Optional[int] = Field(
+    chunks_count: int | None = Field(
         default=None, description="Number of chunks the document was split into"
     )
-    error_msg: Optional[str] = Field(
+    error_msg: str | None = Field(
         default=None, description="Error message if processing failed"
     )
-    metadata: Optional[dict[str, Any]] = Field(
+    metadata: dict[str, Any] | None = Field(
         default=None, description="Additional metadata about the document"
     )
     file_path: str = Field(description="Path to the document file")
@@ -503,7 +506,7 @@ class DocsStatusesResponse(BaseModel):
         statuses: Dictionary mapping document status to lists of document status responses
     """
 
-    statuses: Dict[DocStatus, List[DocStatusResponse]] = Field(
+    statuses: dict[DocStatus, list[DocStatusResponse]] = Field(
         default_factory=dict,
         description="Dictionary mapping document status to lists of document status responses",
     )
@@ -574,11 +577,11 @@ class TrackStatusResponse(BaseModel):
     """
 
     track_id: str = Field(description="The tracking ID")
-    documents: List[DocStatusResponse] = Field(
+    documents: list[DocStatusResponse] = Field(
         description="List of documents associated with this track_id"
     )
     total_count: int = Field(description="Total number of documents for this track_id")
-    status_summary: Dict[str, int] = Field(description="Count of documents by status")
+    status_summary: dict[str, int] = Field(description="Count of documents by status")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -617,7 +620,7 @@ class DocumentsRequest(BaseModel):
         sort_direction: Sort direction ('asc' or 'desc')
     """
 
-    status_filter: Optional[DocStatus] = Field(
+    status_filter: DocStatus | None = Field(
         default=None, description="Filter by document status, None for all statuses"
     )
     page: int = Field(default=1, ge=1, description="Page number (1-based)")
@@ -686,11 +689,11 @@ class PaginatedDocsResponse(BaseModel):
         status_counts: Count of documents by status for all documents
     """
 
-    documents: List[DocStatusResponse] = Field(
+    documents: list[DocStatusResponse] = Field(
         description="List of documents for the current page"
     )
     pagination: PaginationInfo = Field(description="Pagination information")
-    status_counts: Dict[str, int] = Field(
+    status_counts: dict[str, int] = Field(
         description="Count of documents by status for all documents"
     )
 
@@ -739,7 +742,7 @@ class StatusCountsResponse(BaseModel):
         status_counts: Count of documents by status
     """
 
-    status_counts: Dict[str, int] = Field(description="Count of documents by status")
+    status_counts: dict[str, int] = Field(description="Count of documents by status")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -776,14 +779,14 @@ class PipelineStatusResponse(BaseModel):
     autoscanned: bool = False
     busy: bool = False
     job_name: str = "Default Job"
-    job_start: Optional[str] = None
+    job_start: str | None = None
     docs: int = 0
     batchs: int = 0
     cur_batch: int = 0
     request_pending: bool = False
     latest_message: str = ""
-    history_messages: Optional[List[str]] = None
-    update_status: Optional[dict] = None
+    history_messages: list[str] | None = None
+    update_status: dict | None = None
 
     @field_validator("job_start", mode="before")
     @classmethod
@@ -858,7 +861,7 @@ class DocumentManager:
         # Create input directory if it doesn't exist
         self.input_dir.mkdir(parents=True, exist_ok=True)
 
-    def scan_directory_for_new_files(self) -> List[Path]:
+    def scan_directory_for_new_files(self) -> list[Path]:
         """Scan input directory for new files"""
         new_files = []
         for ext in self.supported_extensions:
@@ -875,7 +878,7 @@ class DocumentManager:
         return any(filename.lower().endswith(ext) for ext in self.supported_extensions)
 
 
-def validate_file_path_security(file_path_str: str, base_dir: Path) -> Optional[Path]:
+def validate_file_path_security(file_path_str: str, base_dir: Path) -> Path | None:
     """
     Validate file path security to prevent Path Traversal attacks.
 
@@ -925,7 +928,7 @@ def validate_file_path_security(file_path_str: str, base_dir: Path) -> Optional[
         return candidate_path
 
     except (OSError, ValueError, Exception) as e:
-        logger.warning(f"Invalid file path detected: {file_path_str} - {str(e)}")
+        logger.warning(f"Invalid file path detected: {file_path_str} - {e!s}")
         return None
 
 
@@ -1153,7 +1156,7 @@ def _extract_xlsx(file_bytes: bytes) -> str:
     xlsx_file = BytesIO(file_bytes)
     wb = load_workbook(xlsx_file)
 
-    def escape_cell(cell_value: str | int | float | None) -> str:
+    def escape_cell(cell_value: str | float | None) -> str:
         """Escape characters that would break tab-delimited layout.
 
         Escape order is critical: backslashes first, then tabs/newlines.
@@ -1295,7 +1298,7 @@ async def pipeline_enqueue_file(
             ]
             await rag.apipeline_enqueue_error_documents(error_files, track_id)
             logger.error(
-                f"[File Extraction]Error reading file {file_path.name}: {str(e)}"
+                f"[File Extraction]Error reading file {file_path.name}: {e!s}"
             )
             return False, track_id
 
@@ -1385,7 +1388,7 @@ async def pipeline_enqueue_file(
                             {
                                 "file_path": str(file_path.name),
                                 "error_description": "[File Extraction]UTF-8 encoding error, please convert it to UTF-8 before processing",
-                                "original_error": f"File is not valid UTF-8 encoded text: {str(e)}",
+                                "original_error": f"File is not valid UTF-8 encoded text: {e!s}",
                                 "file_size": file_size,
                             }
                         ]
@@ -1426,7 +1429,7 @@ async def pipeline_enqueue_file(
                             {
                                 "file_path": str(file_path.name),
                                 "error_description": "[File Extraction]PDF processing error",
-                                "original_error": f"Failed to extract text from PDF: {str(e)}",
+                                "original_error": f"Failed to extract text from PDF: {e!s}",
                                 "file_size": file_size,
                             }
                         ]
@@ -1434,7 +1437,7 @@ async def pipeline_enqueue_file(
                             error_files, track_id
                         )
                         logger.error(
-                            f"[File Extraction]Error processing PDF {file_path.name}: {str(e)}"
+                            f"[File Extraction]Error processing PDF {file_path.name}: {e!s}"
                         )
                         return False, track_id
 
@@ -1463,7 +1466,7 @@ async def pipeline_enqueue_file(
                             {
                                 "file_path": str(file_path.name),
                                 "error_description": "[File Extraction]DOCX processing error",
-                                "original_error": f"Failed to extract text from DOCX: {str(e)}",
+                                "original_error": f"Failed to extract text from DOCX: {e!s}",
                                 "file_size": file_size,
                             }
                         ]
@@ -1471,7 +1474,7 @@ async def pipeline_enqueue_file(
                             error_files, track_id
                         )
                         logger.error(
-                            f"[File Extraction]Error processing DOCX {file_path.name}: {str(e)}"
+                            f"[File Extraction]Error processing DOCX {file_path.name}: {e!s}"
                         )
                         return False, track_id
 
@@ -1500,7 +1503,7 @@ async def pipeline_enqueue_file(
                             {
                                 "file_path": str(file_path.name),
                                 "error_description": "[File Extraction]PPTX processing error",
-                                "original_error": f"Failed to extract text from PPTX: {str(e)}",
+                                "original_error": f"Failed to extract text from PPTX: {e!s}",
                                 "file_size": file_size,
                             }
                         ]
@@ -1508,7 +1511,7 @@ async def pipeline_enqueue_file(
                             error_files, track_id
                         )
                         logger.error(
-                            f"[File Extraction]Error processing PPTX {file_path.name}: {str(e)}"
+                            f"[File Extraction]Error processing PPTX {file_path.name}: {e!s}"
                         )
                         return False, track_id
 
@@ -1537,7 +1540,7 @@ async def pipeline_enqueue_file(
                             {
                                 "file_path": str(file_path.name),
                                 "error_description": "[File Extraction]XLSX processing error",
-                                "original_error": f"Failed to extract text from XLSX: {str(e)}",
+                                "original_error": f"Failed to extract text from XLSX: {e!s}",
                                 "file_size": file_size,
                             }
                         ]
@@ -1545,7 +1548,7 @@ async def pipeline_enqueue_file(
                             error_files, track_id
                         )
                         logger.error(
-                            f"[File Extraction]Error processing XLSX {file_path.name}: {str(e)}"
+                            f"[File Extraction]Error processing XLSX {file_path.name}: {e!s}"
                         )
                         return False, track_id
 
@@ -1569,13 +1572,13 @@ async def pipeline_enqueue_file(
                 {
                     "file_path": str(file_path.name),
                     "error_description": "[File Extraction]File format processing error",
-                    "original_error": f"Unexpected error during file extracting: {str(e)}",
+                    "original_error": f"Unexpected error during file extracting: {e!s}",
                     "file_size": file_size,
                 }
             ]
             await rag.apipeline_enqueue_error_documents(error_files, track_id)
             logger.error(
-                f"[File Extraction]Unexpected error during {file_path.name} extracting: {str(e)}"
+                f"[File Extraction]Unexpected error during {file_path.name} extracting: {e!s}"
             )
             return False, track_id
 
@@ -1636,12 +1639,12 @@ async def pipeline_enqueue_file(
                     {
                         "file_path": str(file_path.name),
                         "error_description": "Document enqueue error",
-                        "original_error": f"Failed to enqueue document: {str(e)}",
+                        "original_error": f"Failed to enqueue document: {e!s}",
                         "file_size": file_size,
                     }
                 ]
                 await rag.apipeline_enqueue_error_documents(error_files, track_id)
-                logger.error(f"Error enqueueing document {file_path.name}: {str(e)}")
+                logger.error(f"Error enqueueing document {file_path.name}: {e!s}")
                 return False, track_id
         else:
             error_files = [
@@ -1667,12 +1670,12 @@ async def pipeline_enqueue_file(
             {
                 "file_path": str(file_path.name),
                 "error_description": "Unexpected processing error",
-                "original_error": f"Unexpected error: {str(e)}",
+                "original_error": f"Unexpected error: {e!s}",
                 "file_size": file_size,
             }
         ]
         await rag.apipeline_enqueue_error_documents(error_files, track_id)
-        logger.error(f"Enqueuing file {file_path.name} error: {str(e)}")
+        logger.error(f"Enqueuing file {file_path.name} error: {e!s}")
         logger.error(traceback.format_exc())
         return False, track_id
     finally:
@@ -1680,7 +1683,7 @@ async def pipeline_enqueue_file(
             try:
                 file_path.unlink()
             except Exception as e:
-                logger.error(f"Error deleting file {file_path}: {str(e)}")
+                logger.error(f"Error deleting file {file_path}: {e!s}")
 
 
 async def pipeline_index_file(rag: LightRAG, file_path: Path, track_id: str = None):
@@ -1699,12 +1702,12 @@ async def pipeline_index_file(rag: LightRAG, file_path: Path, track_id: str = No
             await rag.apipeline_process_enqueue_documents()
 
     except Exception as e:
-        logger.error(f"Error indexing file {file_path.name}: {str(e)}")
+        logger.error(f"Error indexing file {file_path.name}: {e!s}")
         logger.error(traceback.format_exc())
 
 
 async def pipeline_index_files(
-    rag: LightRAG, file_paths: List[Path], track_id: str = None
+    rag: LightRAG, file_paths: list[Path], track_id: str = None
 ):
     """Index multiple files sequentially to avoid high CPU load
 
@@ -1733,14 +1736,14 @@ async def pipeline_index_files(
         if enqueued:
             await rag.apipeline_process_enqueue_documents()
     except Exception as e:
-        logger.error(f"Error indexing files: {str(e)}")
+        logger.error(f"Error indexing files: {e!s}")
         logger.error(traceback.format_exc())
 
 
 async def pipeline_index_texts(
     rag: LightRAG,
-    texts: List[str],
-    file_sources: List[str] = None,
+    texts: list[str],
+    file_sources: list[str] = None,
     track_id: str = None,
 ):
     """Index a list of texts with track_id
@@ -1827,14 +1830,14 @@ async def run_scanning_process(
             await rag.apipeline_process_enqueue_documents()
 
     except Exception as e:
-        logger.error(f"Error during scanning process: {str(e)}")
+        logger.error(f"Error during scanning process: {e!s}")
         logger.error(traceback.format_exc())
 
 
 async def background_delete_documents(
     rag: LightRAG,
     doc_manager: DocumentManager,
-    doc_ids: List[str],
+    doc_ids: list[str],
     delete_file: bool = False,
     delete_llm_cache: bool = False,
 ):
@@ -1958,7 +1961,7 @@ async def background_delete_documents(
                                                 file_delete_msg
                                             )
                                     except Exception as file_error:
-                                        file_error_msg = f"Failed to delete input_dir file {result.file_path}: {str(file_error)}"
+                                        file_error_msg = f"Failed to delete input_dir file {result.file_path}: {file_error!s}"
                                         logger.debug(file_error_msg)
                                         async with pipeline_status_lock:
                                             pipeline_status["latest_message"] = (
@@ -1994,7 +1997,7 @@ async def background_delete_documents(
                                                     f"Successfully deleted enqueued file: {enqueued_file.name}"
                                                 )
                                             except Exception as enqueued_error:
-                                                file_error_msg = f"Failed to delete enqueued file {enqueued_file.name}: {str(enqueued_error)}"
+                                                file_error_msg = f"Failed to delete enqueued file {enqueued_file.name}: {enqueued_error!s}"
                                                 logger.debug(file_error_msg)
                                                 async with pipeline_status_lock:
                                                     pipeline_status[
@@ -2017,7 +2020,7 @@ async def background_delete_documents(
                                     )
 
                         except Exception as file_error:
-                            file_error_msg = f"Failed to delete file {result.file_path}: {str(file_error)}"
+                            file_error_msg = f"Failed to delete file {result.file_path}: {file_error!s}"
                             logger.error(file_error_msg)
                             async with pipeline_status_lock:
                                 pipeline_status["latest_message"] = file_error_msg
@@ -2042,7 +2045,7 @@ async def background_delete_documents(
 
             except Exception as e:
                 failed_deletions.append(doc_id)
-                error_msg = f"Error deleting document {i}/{total_docs}: {doc_id}[{file_path}] - {str(e)}"
+                error_msg = f"Error deleting document {i}/{total_docs}: {doc_id}[{file_path}] - {e!s}"
                 logger.error(error_msg)
                 logger.error(traceback.format_exc())
                 async with pipeline_status_lock:
@@ -2050,7 +2053,7 @@ async def background_delete_documents(
                     pipeline_status["history_messages"].append(error_msg)
 
     except Exception as e:
-        error_msg = f"Critical error during batch deletion: {str(e)}"
+        error_msg = f"Critical error during batch deletion: {e!s}"
         logger.error(error_msg)
         logger.error(traceback.format_exc())
         async with pipeline_status_lock:
@@ -2082,7 +2085,7 @@ async def background_delete_documents(
 
 
 def create_document_routes(
-    rag: LightRAG, doc_manager: DocumentManager, api_key: Optional[str] = None
+    rag: LightRAG, doc_manager: DocumentManager, api_key: str | None = None
 ):
     # Create combined auth dependency for document routes
     combined_auth = get_combined_auth_dependency(api_key)
@@ -2276,7 +2279,7 @@ def create_document_routes(
             # Re-raise HTTP exceptions (400, 413, etc.)
             raise
         except Exception as e:
-            logger.error(f"Error /documents/upload: {file.filename}: {str(e)}")
+            logger.error(f"Error /documents/upload: {file.filename}: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -2354,7 +2357,7 @@ def create_document_routes(
                 track_id=track_id,
             )
         except Exception as e:
-            logger.error(f"Error /documents/text: {str(e)}")
+            logger.error(f"Error /documents/text: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -2437,7 +2440,7 @@ def create_document_routes(
                 track_id=track_id,
             )
         except Exception as e:
-            logger.error(f"Error /documents/texts: {str(e)}")
+            logger.error(f"Error /documents/texts: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -2542,7 +2545,7 @@ def create_document_routes(
             for i, result in enumerate(drop_results):
                 storage_name = storages[i].__class__.__name__
                 if isinstance(result, Exception):
-                    error_msg = f"Error dropping {storage_name}: {str(result)}"
+                    error_msg = f"Error dropping {storage_name}: {result!s}"
                     errors.append(error_msg)
                     logger.error(error_msg)
                     storage_error_count += 1
@@ -2589,7 +2592,7 @@ def create_document_routes(
                         file_path.unlink()
                         deleted_files_count += 1
                     except Exception as e:
-                        logger.error(f"Error deleting file {file_path}: {str(e)}")
+                        logger.error(f"Error deleting file {file_path}: {e!s}")
                         file_errors_count += 1
 
             # Log file deletion results
@@ -2620,7 +2623,7 @@ def create_document_routes(
             # Return response based on results
             return ClearDocumentsResponse(status=status, message=final_message)
         except Exception as e:
-            error_msg = f"Error clearing documents: {str(e)}"
+            error_msg = f"Error clearing documents: {e!s}"
             logger.error(error_msg)
             logger.error(traceback.format_exc())
             if "history_messages" in pipeline_status:
@@ -2666,9 +2669,9 @@ def create_document_routes(
         """
         try:
             from lightrag.kg.shared_storage import (
+                get_all_update_flags_status,
                 get_namespace_data,
                 get_namespace_lock,
-                get_all_update_flags_status,
             )
 
             pipeline_status = await get_namespace_data(
@@ -2725,13 +2728,13 @@ def create_document_routes(
                     status_dict["history_messages"] = history_list
 
             # Ensure job_start is properly formatted as a string with timezone information
-            if "job_start" in status_dict and status_dict["job_start"]:
+            if status_dict.get("job_start"):
                 # Use format_datetime to ensure consistent formatting
                 status_dict["job_start"] = format_datetime(status_dict["job_start"])
 
             return PipelineStatusResponse(**status_dict)
         except Exception as e:
-            logger.error(f"Error getting pipeline status: {str(e)}")
+            logger.error(f"Error getting pipeline status: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -2767,7 +2770,7 @@ def create_document_routes(
             )
 
             tasks = [rag.get_docs_by_status(status) for status in statuses]
-            results: List[Dict[str, DocProcessingStatus]] = await asyncio.gather(*tasks)
+            results: list[dict[str, DocProcessingStatus]] = await asyncio.gather(*tasks)
 
             response = DocsStatusesResponse()
             total_documents = 0
@@ -2833,7 +2836,7 @@ def create_document_routes(
 
             return response
         except Exception as e:
-            logger.error(f"Error GET /documents: {str(e)}")
+            logger.error(f"Error GET /documents: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -2920,7 +2923,7 @@ def create_document_routes(
             )
 
         except Exception as e:
-            error_msg = f"Error initiating document deletion for {delete_request.doc_ids}: {str(e)}"
+            error_msg = f"Error initiating document deletion for {delete_request.doc_ids}: {e!s}"
             logger.error(error_msg)
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=error_msg)
@@ -2955,7 +2958,7 @@ def create_document_routes(
 
             return ClearCacheResponse(status="success", message=message)
         except Exception as e:
-            logger.error(f"Error clearing cache: {str(e)}")
+            logger.error(f"Error clearing cache: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -2989,7 +2992,7 @@ def create_document_routes(
         except HTTPException:
             raise
         except Exception as e:
-            error_msg = f"Error deleting entity '{request.entity_name}': {str(e)}"
+            error_msg = f"Error deleting entity '{request.entity_name}': {e!s}"
             logger.error(error_msg)
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=error_msg)
@@ -3027,7 +3030,7 @@ def create_document_routes(
         except HTTPException:
             raise
         except Exception as e:
-            error_msg = f"Error deleting relation from '{request.source_entity}' to '{request.target_entity}': {str(e)}"
+            error_msg = f"Error deleting relation from '{request.source_entity}' to '{request.target_entity}': {e!s}"
             logger.error(error_msg)
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=error_msg)
@@ -3102,7 +3105,7 @@ def create_document_routes(
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error getting track status for {track_id}: {str(e)}")
+            logger.error(f"Error getting track status for {track_id}: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -3189,7 +3192,7 @@ def create_document_routes(
             )
 
         except Exception as e:
-            logger.error(f"Error getting paginated documents: {str(e)}")
+            logger.error(f"Error getting paginated documents: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -3216,7 +3219,7 @@ def create_document_routes(
             return StatusCountsResponse(status_counts=status_counts)
 
         except Exception as e:
-            logger.error(f"Error getting document status counts: {str(e)}")
+            logger.error(f"Error getting document status counts: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -3262,7 +3265,7 @@ def create_document_routes(
             )
 
         except Exception as e:
-            logger.error(f"Error initiating reprocessing of failed documents: {str(e)}")
+            logger.error(f"Error initiating reprocessing of failed documents: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -3325,7 +3328,7 @@ def create_document_routes(
             )
 
         except Exception as e:
-            logger.error(f"Error requesting pipeline cancellation: {str(e)}")
+            logger.error(f"Error requesting pipeline cancellation: {e!s}")
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500, detail=str(e))
 

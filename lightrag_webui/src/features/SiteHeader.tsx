@@ -37,10 +37,10 @@ function TabsNavigation() {
   return (
     <div className="flex h-8 self-center">
       <TabsList className="h-full gap-2">
-        {true && ( // Set to true to show, false to hide  
-          <NavigationTab value="documents" currentTab={currentTab}>  
-            {t('header.documents')}  
-          </NavigationTab>  
+        {true && ( // Set to true to show, false to hide
+          <NavigationTab value="documents" currentTab={currentTab}>
+            {t('header.documents')}
+          </NavigationTab>
         )}
         <NavigationTab value="sanitize-data" currentTab={currentTab}>
           {t('header.sanitizeData')}
@@ -51,10 +51,10 @@ function TabsNavigation() {
         <NavigationTab value="retrieval" currentTab={currentTab}>
           {t('header.retrieval')}
         </NavigationTab>
-        {true && ( // Set to true to show, false to hide  
-          <NavigationTab value="api" currentTab={currentTab}>  
-            {t('header.api')}  
-          </NavigationTab>  
+        {true && ( // Set to true to show, false to hide
+          <NavigationTab value="api" currentTab={currentTab}>
+            {t('header.api')}
+          </NavigationTab>
         )}
       </TabsList>
     </div>

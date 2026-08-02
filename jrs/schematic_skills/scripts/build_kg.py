@@ -73,19 +73,25 @@ def _sentence(*parts: str) -> str:
 # --------------------------------------------------------------------------------------
 def describe_component(c: dict[str, Any], drawing_no: str) -> str:
     ratings = c.get("ratings") or {}
-    rating_text = ", ".join(f"{k}: {v}" for k, v in ratings.items() if v not in (None, ""))
+    rating_text = ", ".join(
+        f"{k}: {v}" for k, v in ratings.items() if v not in (None, "")
+    )
     aliases = c.get("aliases") or []
     alias_text = f"It is also referred to as {', '.join(aliases)}." if aliases else ""
     loc = c.get("location") or {}
     loc_text = (
-        f"It is drawn in the {loc['zone']} area of the schematic." if loc.get("zone") else ""
+        f"It is drawn in the {loc['zone']} area of the schematic."
+        if loc.get("zone")
+        else ""
     )
     return _sentence(
         f"{c['id']} is a {_clean(c.get('class')).replace('_', ' ') or 'component'} on drawing {drawing_no}.",
         _clean(c.get("description")),
         f"Function: {_clean(c['function'])}." if c.get("function") else "",
         f"Ratings - {rating_text}." if rating_text else "",
-        f"It operates in the {c['power_domain']} power domain." if c.get("power_domain") else "",
+        f"It operates in the {c['power_domain']} power domain."
+        if c.get("power_domain")
+        else "",
         f"Its normal state is {c['normal_state']}." if c.get("normal_state") else "",
         f"Part number {c['part_number']}." if c.get("part_number") else "",
         f"Manufactured by {c['manufacturer']}." if c.get("manufacturer") else "",
@@ -97,8 +103,12 @@ def describe_component(c: dict[str, Any], drawing_no: str) -> str:
 def describe_terminal(t: dict[str, Any]) -> str:
     return _sentence(
         f"{t['id']} is a connection point on component {t.get('parent_component', 'unknown')}.",
-        f"It serves as a {_clean(t['function']).replace('_', ' ')} terminal." if t.get("function") else "",
-        f"It is tied to net {t['net']}." if t.get("net") else "It is not assigned to a net.",
+        f"It serves as a {_clean(t['function']).replace('_', ' ')} terminal."
+        if t.get("function")
+        else "",
+        f"It is tied to net {t['net']}."
+        if t.get("net")
+        else "It is not assigned to a net.",
         _clean(t.get("description")),
     )
 
@@ -112,8 +122,12 @@ def describe_net(n: dict[str, Any]) -> str:
     )
     return _sentence(
         f"Net {n['id']} is an electrically common node on the schematic.",
-        f"It carries a {_clean(n['signal_type'])} signal." if n.get("signal_type") else "",
-        f"Its nominal voltage is {n['nominal_voltage']}." if n.get("nominal_voltage") else "",
+        f"It carries a {_clean(n['signal_type'])} signal."
+        if n.get("signal_type")
+        else "",
+        f"Its nominal voltage is {n['nominal_voltage']}."
+        if n.get("nominal_voltage")
+        else "",
         member_text,
         "Every point on this net sees the same potential, so a fault anywhere on it affects "
         "all of these terminals.",
@@ -124,7 +138,9 @@ def describe_net(n: dict[str, Any]) -> str:
 def describe_wire(w: dict[str, Any]) -> str:
     spec = " ".join(x for x in [_clean(w.get("color")), _clean(w.get("gauge"))] if x)
     return _sentence(
-        f"Wire {w['id']} is a {spec} conductor." if spec else f"Wire {w['id']} is a conductor.",
+        f"Wire {w['id']} is a {spec} conductor."
+        if spec
+        else f"Wire {w['id']} is a conductor.",
         f"It runs from {w['from_terminal']} to {w['to_terminal']}."
         if w.get("from_terminal") and w.get("to_terminal")
         else "",
@@ -157,7 +173,7 @@ def describe_drawing(d: dict[str, Any]) -> str:
     notes = d.get("notes") or []
     return _sentence(
         f"{d.get('drawing_number', 'This drawing')} is an electrical schematic titled "
-        f"\"{_clean(d.get('title'))}\".",
+        f'"{_clean(d.get("title"))}".',
         f"Revision {d['revision']}." if d.get("revision") else "",
         f"Dated {d['date']}." if d.get("date") else "",
         f"It documents the {d['assembly']}." if d.get("assembly") else "",
@@ -237,7 +253,11 @@ def build(master: dict[str, Any], file_path: str) -> dict[str, Any]:
         emit_entity(drawing_no, "drawing", describe_drawing(drawing))
 
     for c in master.get("components", []):
-        emit_entity(c["id"], _clean(c.get("class")) or "component", describe_component(c, drawing_no))
+        emit_entity(
+            c["id"],
+            _clean(c.get("class")) or "component",
+            describe_component(c, drawing_no),
+        )
     for t in master.get("terminals", []):
         emit_entity(t["id"], "terminal", describe_terminal(t))
     for n in master.get("nets", []):
@@ -305,9 +325,7 @@ def validate(master: dict[str, Any], kg: dict[str, Any]) -> tuple[list[str], lis
 
     # Cross-check the netlist for terminals that never landed on a net. Spare poles and
     # deliberately-unconnected cable conductors are normal, so this is a note, not a fault.
-    floating = [
-        t["id"] for t in master.get("terminals", []) if not t.get("net")
-    ]
+    floating = [t["id"] for t in master.get("terminals", []) if not t.get("net")]
     if floating:
         notes.append(
             f"terminals with no net assigned: {len(floating)} ({', '.join(floating[:10])})"
@@ -332,9 +350,7 @@ def report(master: dict[str, Any], kg: dict[str, Any]) -> str:
     lines += [f"    {k:22s} {v}" for k, v in sorted(rel_types.items())]
     missing = sorted(RELATION_TYPES - set(rel_types))
     if missing:
-        lines.append(
-            "  relationship types not used: " + ", ".join(missing)
-        )
+        lines.append("  relationship types not used: " + ", ".join(missing))
         if "ON_NET" in missing:
             lines.append(
                 "    WARNING: no ON_NET edges. Net-tracing questions ('what is wire 110 "
@@ -353,14 +369,20 @@ def main() -> None:
         description="Transform circuit_logic.json into a LightRAG custom KG"
     )
     parser.add_argument("master", help="Path to the enriched circuit_logic.json")
-    parser.add_argument("-o", "--output", help="Output custom_kg.json (default: stdout)")
+    parser.add_argument(
+        "-o", "--output", help="Output custom_kg.json (default: stdout)"
+    )
     parser.add_argument("--pretty", action="store_true", help="Pretty print JSON")
     parser.add_argument(
         "--file-path",
         help="file_path recorded on every chunk/entity/relationship (default: master filename)",
     )
-    parser.add_argument("--validate", action="store_true", help="Fail on structural problems")
-    parser.add_argument("--report", action="store_true", help="Print a build report to stderr")
+    parser.add_argument(
+        "--validate", action="store_true", help="Fail on structural problems"
+    )
+    parser.add_argument(
+        "--report", action="store_true", help="Print a build report to stderr"
+    )
     args = parser.parse_args()
 
     master_path = Path(args.master)

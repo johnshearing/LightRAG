@@ -7,13 +7,13 @@ legacy collections/tables to new ones with different embedding models.
 """
 
 import json
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
 
-from lightrag.kg.qdrant_impl import QdrantVectorDBStorage
-from lightrag.kg.postgres_impl import PGVectorStorage
 from lightrag.exceptions import DataMigrationError
-
+from lightrag.kg.postgres_impl import PGVectorStorage
+from lightrag.kg.qdrant_impl import QdrantVectorDBStorage
 
 # Note: Tests should use proper table names that have DDL templates
 # Valid base tables: LIGHTRAG_VDB_CHUNKS, LIGHTRAG_VDB_ENTITIES, LIGHTRAG_VDB_RELATIONSHIPS,
@@ -357,7 +357,6 @@ class TestPostgresDimensionMismatch:
         async def mock_run_with_retry(operation, *args, **kwargs):
             migration_executed.append(True)
             migration_done["value"] = True
-            return None
 
         db._run_with_retry = AsyncMock(side_effect=mock_run_with_retry)
         db.execute = AsyncMock()

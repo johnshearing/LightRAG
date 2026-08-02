@@ -28,14 +28,14 @@ Usage:
     python examples/lightrag_openai_opensearch_graph_demo.py
 """
 
-import os
 import asyncio
+import os
+
 import numpy as np
 
 from lightrag import LightRAG, QueryParam
 from lightrag.llm.openai import gpt_4o_mini_complete, openai_embed
-from lightrag.utils import setup_logger, EmbeddingFunc
-
+from lightrag.utils import EmbeddingFunc, setup_logger
 
 # --------------------------------------------------
 # Logger

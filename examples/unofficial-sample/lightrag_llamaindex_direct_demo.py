@@ -1,14 +1,16 @@
+import asyncio
 import os
+
+import nest_asyncio
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.openai import OpenAI
+
 from lightrag import LightRAG, QueryParam
 from lightrag.llm.llama_index_impl import (
     llama_index_complete_if_cache,
     llama_index_embed,
 )
 from lightrag.utils import EmbeddingFunc
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
-import asyncio
-import nest_asyncio
 
 nest_asyncio.apply()
 
@@ -54,7 +56,7 @@ async def llm_model_func(prompt, system_prompt=None, history_messages=[], **kwar
         )
         return response
     except Exception as e:
-        print(f"LLM request failed: {str(e)}")
+        print(f"LLM request failed: {e!s}")
         raise
 
 
@@ -67,7 +69,7 @@ async def embedding_func(texts):
         )
         return await llama_index_embed(texts, embed_model=embed_model)
     except Exception as e:
-        print(f"Embedding failed: {str(e)}")
+        print(f"Embedding failed: {e!s}")
         raise
 
 

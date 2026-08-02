@@ -4,12 +4,12 @@ import pytest
 
 sys.argv = sys.argv[:1]
 
-from lightrag.api.routers.document_routes import (  # noqa: E402
+from lightrag.api.routers.document_routes import (
     DocStatusResponse,
     normalize_file_path,
     pipeline_index_texts,
 )
-from lightrag.base import DocStatus  # noqa: E402
+from lightrag.base import DocStatus
 
 
 class DummyRAG:

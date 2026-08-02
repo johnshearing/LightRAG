@@ -1,20 +1,29 @@
 import asyncio
 import os
-from typing import Any, final, Optional, Dict
 from dataclasses import dataclass, fields
+from typing import Any, final
+
 import numpy as np
-from lightrag.utils import logger, compute_mdhash_id
+import pipmaster as pm
+
+from lightrag.utils import compute_mdhash_id, logger
+
 from ..base import BaseVectorStorage
 from ..constants import DEFAULT_MAX_FILE_PATH_LENGTH
 from ..kg.shared_storage import get_data_init_lock
-import pipmaster as pm
 
 if not pm.is_installed("pymilvus"):
     pm.install("pymilvus>=2.6.2")
 
 import configparser
-from pymilvus import MilvusClient, DataType, CollectionSchema, FieldSchema  # type: ignore
+
 from packaging import version
+from pymilvus import (  # type: ignore
+    CollectionSchema,
+    DataType,
+    FieldSchema,
+    MilvusClient,
+)
 
 config = configparser.ConfigParser()
 config.read("config.ini", "utf-8")
@@ -81,23 +90,23 @@ class MilvusIndexConfig:
     """
 
     # Base configuration
-    index_type: Optional[str] = None
-    metric_type: Optional[str] = None
+    index_type: str | None = None
+    metric_type: str | None = None
 
     # HNSW series parameters
-    hnsw_m: Optional[int] = None
-    hnsw_ef_construction: Optional[int] = None
-    hnsw_ef: Optional[int] = None
+    hnsw_m: int | None = None
+    hnsw_ef_construction: int | None = None
+    hnsw_ef: int | None = None
 
     # HNSW_SQ specific parameters
-    sq_type: Optional[str] = None
-    sq_refine: Optional[bool] = None
-    sq_refine_type: Optional[str] = None
-    sq_refine_k: Optional[int] = None
+    sq_type: str | None = None
+    sq_refine: bool | None = None
+    sq_refine_type: str | None = None
+    sq_refine_k: int | None = None
 
     # IVF series parameters
-    ivf_nlist: Optional[int] = None
-    ivf_nprobe: Optional[int] = None
+    ivf_nlist: int | None = None
+    ivf_nprobe: int | None = None
 
     def __post_init__(self):
         """Load configuration from environment variables (init parameters take precedence)"""
@@ -233,7 +242,7 @@ class MilvusIndexConfig:
                 f"'{self.index_type}'. Ensure pymilvus is installed correctly."
             )
 
-        params: Dict[str, Any] = {}
+        params: dict[str, Any] = {}
 
         # HNSW series indexes
         if self.index_type in ("HNSW", "HNSW_SQ", "HNSW_PQ", "HNSW_PRQ"):
@@ -267,14 +276,14 @@ class MilvusIndexConfig:
 
         return index_params
 
-    def build_search_params(self) -> Dict[str, Any]:
+    def build_search_params(self) -> dict[str, Any]:
         """
         Build search parameters
 
         Returns:
             Search parameters dictionary
         """
-        search_params: Dict[str, Any] = {}
+        search_params: dict[str, Any] = {}
 
         if self.index_type in ("HNSW", "HNSW_SQ", "HNSW_PQ", "HNSW_PRQ"):
             search_params["ef"] = self.hnsw_ef
@@ -298,7 +307,7 @@ class MilvusIndexConfig:
         """
         return {f.name for f in fields(cls)}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Export configuration as dictionary (for logging/debugging)"""
         return {
             "index_type": self.index_type,
@@ -364,7 +373,7 @@ class MilvusVectorDBStorage(BaseVectorStorage):
 
         return connection_kwargs
 
-    def _get_milvus_db_name(self) -> Optional[str]:
+    def _get_milvus_db_name(self) -> str | None:
         """Return the configured Milvus database name, if any."""
         db_name = self._get_milvus_connection_kwargs(include_db_name=True).get(
             "db_name"

@@ -1,26 +1,27 @@
-from dataclasses import dataclass
 import os
-from typing import Any, Union, final
+from dataclasses import dataclass
+from typing import Any, final
 
 from lightrag.base import (
     DocProcessingStatus,
     DocStatus,
     DocStatusStorage,
 )
+from lightrag.exceptions import StorageNotInitializedError
 from lightrag.utils import (
+    get_pinyin_sort_key,
     load_json,
     logger,
     write_json,
-    get_pinyin_sort_key,
 )
-from lightrag.exceptions import StorageNotInitializedError
+
 from .shared_storage import (
+    clear_all_update_flags,
+    get_data_init_lock,
     get_namespace_data,
     get_namespace_lock,
-    get_data_init_lock,
     get_update_flag,
     set_all_update_flags,
-    clear_all_update_flags,
     try_initialize_namespace,
 )
 
@@ -220,7 +221,7 @@ class JsonDocStatusStorage(DocStatusStorage):
         async with self._storage_lock:
             return len(self._data) == 0
 
-    async def get_by_id(self, id: str) -> Union[dict[str, Any], None]:
+    async def get_by_id(self, id: str) -> dict[str, Any] | None:
         async with self._storage_lock:
             return self._data.get(id)
 
@@ -245,8 +246,7 @@ class JsonDocStatusStorage(DocStatusStorage):
             Tuple of (list of (doc_id, DocProcessingStatus) tuples, total_count)
         """
         # Validate parameters
-        if page < 1:
-            page = 1
+        page = max(page, 1)
         if page_size < 10:
             page_size = 10
         elif page_size > 200:
@@ -358,7 +358,7 @@ class JsonDocStatusStorage(DocStatusStorage):
             if any_deleted:
                 await set_all_update_flags(self.namespace, workspace=self.workspace)
 
-    async def get_doc_by_file_path(self, file_path: str) -> Union[dict[str, Any], None]:
+    async def get_doc_by_file_path(self, file_path: str) -> dict[str, Any] | None:
         """Get document by file path
 
         Args:

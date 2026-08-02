@@ -15,13 +15,14 @@ Usage:
     python examples/lightrag_gemini_demo.py
 """
 
-import os
 import asyncio
+import os
+
 import nest_asyncio
 import numpy as np
 
 from lightrag import LightRAG, QueryParam
-from lightrag.llm.gemini import gemini_model_complete, gemini_embed
+from lightrag.llm.gemini import gemini_embed, gemini_model_complete
 from lightrag.utils import wrap_embedding_func_with_attrs
 
 nest_asyncio.apply()

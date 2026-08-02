@@ -10,12 +10,14 @@ Prerequisites:
 3. asyncpg installed: pip install asyncpg
 """
 
-import pytest
 import asyncio
 import os
 import time
-from dotenv import load_dotenv
 from unittest.mock import patch
+
+import pytest
+from dotenv import load_dotenv
+
 from lightrag.kg.postgres_impl import PostgreSQLDB
 
 asyncpg = pytest.importorskip("asyncpg")
@@ -144,9 +146,9 @@ class TestPostgresRetryIntegration:
             ):
                 await db.initdb()
 
-            assert (
-                attempt_count["value"] == 3
-            ), f"Expected 3 attempts, got {attempt_count['value']}"
+            assert attempt_count["value"] == 3, (
+                f"Expected 3 attempts, got {attempt_count['value']}"
+            )
             assert db.pool is not None, "Pool should be initialized after retries"
 
             # Verify database is actually working
@@ -240,9 +242,9 @@ class TestPostgresRetryIntegration:
             print(f"  → Completed in {elapsed:.2f}s")
             print(f"  → Results: {successful} successful, {failed} failed")
 
-            assert (
-                successful == num_queries
-            ), f"All {num_queries} queries should succeed"
+            assert successful == num_queries, (
+                f"All {num_queries} queries should succeed"
+            )
             assert failed == 0, "No queries should fail"
 
             print("\n✅ Test passed: All concurrent queries succeeded, no deadlocks")
@@ -275,9 +277,9 @@ class TestPostgresRetryIntegration:
 
             print(f"  ✓ Pool reset completed in {elapsed:.2f}s")
             assert db.pool is None, "Pool should be None after reset"
-            assert (
-                elapsed < db.pool_close_timeout + 1
-            ), "Reset should complete within timeout"
+            assert elapsed < db.pool_close_timeout + 1, (
+                "Reset should complete within timeout"
+            )
 
             print("\n✅ Test passed: Pool reset handled correctly")
             print("=" * 80)

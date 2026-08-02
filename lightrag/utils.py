@@ -1,46 +1,41 @@
 from __future__ import annotations
-import weakref
-
-import sys
 
 import asyncio
-import html
 import csv
+import html
 import inspect
 import json
 import logging
 import logging.handlers
 import os
 import re
+import sys
 import time
 import uuid
+import weakref
+from collections.abc import Callable, Collection, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from functools import wraps
 from hashlib import md5
 from typing import (
+    TYPE_CHECKING,
     Any,
     Protocol,
-    Callable,
-    TYPE_CHECKING,
-    List,
-    Optional,
-    Iterable,
-    Sequence,
-    Collection,
 )
+
 import numpy as np
 from dotenv import load_dotenv
 
 from lightrag.constants import (
-    DEFAULT_LOG_MAX_BYTES,
     DEFAULT_LOG_BACKUP_COUNT,
     DEFAULT_LOG_FILENAME,
-    GRAPH_FIELD_SEP,
+    DEFAULT_LOG_MAX_BYTES,
     DEFAULT_MAX_TOTAL_TOKENS,
     DEFAULT_SOURCE_IDS_LIMIT_METHOD,
-    VALID_SOURCE_IDS_LIMIT_METHODS,
+    GRAPH_FIELD_SEP,
     SOURCE_IDS_LIMIT_METHOD_FIFO,
+    VALID_SOURCE_IDS_LIMIT_METHODS,
 )
 
 # Precompile regex pattern for JSON sanitization (module-level, compiled once)
@@ -136,7 +131,7 @@ async def safe_vdb_operation_with_exception(
     entity_name: str = "",
     max_retries: int = 3,
     retry_delay: float = 0.2,
-    logger_func: Optional[Callable] = None,
+    logger_func: Callable | None = None,
 ) -> None:
     """
     Safely execute vector database operations with retry mechanism and exception handling.
@@ -377,7 +372,7 @@ def setup_logger(
             file_handler.setLevel(level)
             logger_instance.addHandler(file_handler)
         except PermissionError as e:
-            logger.warning(f"Could not create log file at {log_file_path}: {str(e)}")
+            logger.warning(f"Could not create log file at {log_file_path}: {e!s}")
             logger.warning("Continuing with console logging only")
 
     # Add path filter if requested
@@ -559,7 +554,6 @@ def parse_cache_key(cache_key: str) -> tuple[str, str, str] | None:
 class QueueFullError(Exception):
     """Raised when the queue is full and the wait times out"""
 
-    pass
 
 
 class WorkerTimeoutError(Exception):
@@ -717,7 +711,7 @@ def priority_limit_async_func_call(
                         except Exception as e:
                             # Function execution error
                             logger.error(
-                                f"{queue_name}: Error in decorated function for task {task_id}: {str(e)}"
+                                f"{queue_name}: Error in decorated function for task {task_id}: {e!s}"
                             )
                             if not task_state.future.done():
                                 task_state.future.set_exception(e)
@@ -730,7 +724,7 @@ def priority_limit_async_func_call(
                     except Exception as e:
                         # Critical error in worker loop
                         logger.error(
-                            f"{queue_name}: Critical error in worker: {str(e)}"
+                            f"{queue_name}: Critical error in worker: {e!s}"
                         )
                         await asyncio.sleep(0.1)
             finally:
@@ -801,7 +795,7 @@ def priority_limit_async_func_call(
                         tasks.update(new_tasks)
 
             except Exception as e:
-                logger.error(f"{queue_name}: Error in enhanced health check: {str(e)}")
+                logger.error(f"{queue_name}: Error in enhanced health check: {e!s}")
             finally:
                 logger.debug(f"{queue_name}: Enhanced health check task exiting")
                 initialized = False
@@ -1008,10 +1002,10 @@ def priority_limit_async_func_call(
                     )
                 except WorkerTimeoutError as e:
                     # This is Worker-level timeout, directly propagate exception information
-                    raise TimeoutError(f"{queue_name}: {str(e)}")
+                    raise TimeoutError(f"{queue_name}: {e!s}")
                 except HealthCheckTimeoutError as e:
                     # This is Health Check-level timeout, directly propagate exception information
-                    raise TimeoutError(f"{queue_name}: {str(e)}")
+                    raise TimeoutError(f"{queue_name}: {e!s}")
 
             finally:
                 # Ensure cleanup
@@ -1216,11 +1210,11 @@ class TokenizerInterface(Protocol):
     Defines the interface for a tokenizer, requiring encode and decode methods.
     """
 
-    def encode(self, content: str) -> List[int]:
+    def encode(self, content: str) -> list[int]:
         """Encodes a string into a list of tokens."""
         ...
 
-    def decode(self, tokens: List[int]) -> str:
+    def decode(self, tokens: list[int]) -> str:
         """Decodes a list of tokens into a string."""
         ...
 
@@ -1241,7 +1235,7 @@ class Tokenizer:
         self.model_name: str = model_name
         self.tokenizer: TokenizerInterface = tokenizer
 
-    def encode(self, content: str) -> List[int]:
+    def encode(self, content: str) -> list[int]:
         """
         Encodes a string into a list of tokens using the underlying tokenizer.
 
@@ -1253,7 +1247,7 @@ class Tokenizer:
         """
         return self.tokenizer.encode(content)
 
-    def decode(self, tokens: List[int]) -> str:
+    def decode(self, tokens: list[int]) -> str:
         """
         Decodes a list of tokens into a string using the underlying tokenizer.
 
@@ -1659,10 +1653,7 @@ async def aexport_data(
                 )
 
                 # Write rows
-                for entity in entities_data:
-                    mdfile.write(
-                        "| " + " | ".join(str(v) for v in entity.values()) + " |\n"
-                    )
+                mdfile.writelines("| " + " | ".join(str(v) for v in entity.values()) + " |\n" for entity in entities_data)
                 mdfile.write("\n\n")
             else:
                 mdfile.write("*No entity data available*\n\n")
@@ -1677,10 +1668,7 @@ async def aexport_data(
                 )
 
                 # Write rows
-                for relation in relations_data:
-                    mdfile.write(
-                        "| " + " | ".join(str(v) for v in relation.values()) + " |\n"
-                    )
+                mdfile.writelines("| " + " | ".join(str(v) for v in relation.values()) + " |\n" for relation in relations_data)
                 mdfile.write("\n\n")
             else:
                 mdfile.write("*No relation data available*\n\n")
@@ -1697,12 +1685,9 @@ async def aexport_data(
                 )
 
                 # Write rows
-                for relationship in relationships_data:
-                    mdfile.write(
-                        "| "
+                mdfile.writelines("| "
                         + " | ".join(str(v) for v in relationship.values())
-                        + " |\n"
-                    )
+                        + " |\n" for relationship in relationships_data)
             else:
                 mdfile.write("*No relationship data available*\n\n")
 
@@ -1854,7 +1839,7 @@ def lazy_external_import(module_name: str, class_name: str) -> Callable[..., Any
 
 async def update_chunk_cache_list(
     chunk_id: str,
-    text_chunks_storage: "BaseKVStorage",
+    text_chunks_storage: BaseKVStorage,
     cache_keys: list[str],
     cache_scenario: str = "batch_update",
 ) -> None:
@@ -1905,7 +1890,7 @@ def remove_think_tags(text: str) -> str:
 async def use_llm_func_with_cache(
     user_prompt: str,
     use_llm_func: callable,
-    llm_response_cache: "BaseKVStorage | None" = None,
+    llm_response_cache: BaseKVStorage | None = None,
     system_prompt: str | None = None,
     max_tokens: int = None,
     history_messages: list[dict[str, str]] = None,
@@ -2035,7 +2020,7 @@ async def use_llm_func_with_cache(
         )
     except Exception as e:
         # Add [LLM func] prefix to error message
-        error_msg = f"[LLM func] {str(e)}"
+        error_msg = f"[LLM func] {e!s}"
         # Re-raise with the same exception type but modified message
         raise type(e)(error_msg) from e
 
@@ -2357,8 +2342,8 @@ def pick_by_weighted_polling(
 
 async def pick_by_vector_similarity(
     query: str,
-    text_chunks_storage: "BaseKVStorage",
-    chunks_vdb: "BaseVectorStorage",
+    text_chunks_storage: BaseKVStorage,
+    chunks_vdb: BaseVectorStorage,
     num_of_chunks: int,
     entity_info: list[dict[str, Any]],
     embedding_func: callable,
@@ -2622,7 +2607,7 @@ async def apply_rerank_if_enabled(
 async def process_chunks_unified(
     query: str,
     unique_chunks: list[dict],
-    query_param: "QueryParam",
+    query_param: QueryParam,
     global_config: dict,
     source_type: str = "mixed",
     chunk_token_limit: int = None,  # Add parameter for dynamic token limit
@@ -3071,13 +3056,13 @@ def create_prefixed_exception(original_exception: Exception, prefix: str) -> Exc
             return type(original_exception)(*args)
         else:
             # Method 2: If no args, try single parameter construction.
-            return type(original_exception)(f"{prefix}: {str(original_exception)}")
+            return type(original_exception)(f"{prefix}: {original_exception!s}")
     except (TypeError, ValueError, AttributeError) as construct_error:
         # Method 3: If reconstruction fails, wrap it in a RuntimeError.
         # This is the safest fallback, as attempting to create the same type
         # with a single string can fail if the constructor requires multiple arguments.
         return RuntimeError(
-            f"{prefix}: {type(original_exception).__name__}: {str(original_exception)} "
+            f"{prefix}: {type(original_exception).__name__}: {original_exception!s} "
             f"(Original exception could not be reconstructed: {construct_error})"
         )
 
